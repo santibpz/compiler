@@ -1,3 +1,20 @@
+from globalTypes import *
+
+
+def globales(prog, pos, long, lineno, lstart = 0, lend = 0):
+    global program
+    global position
+    global programLength
+    global lineNumber
+    global lineStart
+    global lineEnd
+    program = prog
+    position = pos
+    programLength = long
+    lineNumber = lineno
+    lineStart = lstart
+    lineEnd = lend
+
 tabla = [
     [1, 2, 12, 13, 3, 4, 5, 6, 7, 23, 24, 25, 26, 27, 28, 29, 30, 9, 0, 33],
     [1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 33],
@@ -35,241 +52,257 @@ b = ' \t\n$'
                                        
 '''
 
-b = ' \t\n$'
-digit = '0123456789'
-alphabet = 'aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ'
-
-# s = '(**/[)!=]/+-/*<56<= ;, 12 >>={}=== $'
-
-s = '''
-    int gcd(int u, int v) {
+a = '''int gcd(int u, int v) # {
         if (v == 0) return u ;
         else return gcd(v, u-u/v*v);
         /* u-u/v*v == u mod v */
-    } $
-'''
+    }$'''
 
-estado = 0
-p = 0
+print(a[0])
 
-lexema = ''
+b = ' \t\n$'
 
-while(s[p] != '$'):
-  c = s[p] # current char
-  if c in alphabet:
-    col = 0
-  elif c in digit:
-    col = 1
-  elif c == '+':
-    col = 2
-  elif c == '-':
-    col = 3
-  elif c == '/':
-    col = 4
-  elif c == '<':
-    col = 5
-  elif c == '>':
-    col = 6
-  elif c == '=':
-    col = 7
-  elif c == '!':
-    col = 8
-  elif c == ';':
-    col = 9
-  elif c == ',':
-    col = 10
-  elif c == '(':
-    col = 11
-  elif c == ')':
-    col = 12
-  elif c == '[':
-    col = 13
-  elif c == ']':
-    col = 14
-  elif c == '{':
-    col = 15
-  elif c == '}':
-    col = 16
-  elif c == '*':
-    col = 17
-  elif c in b:
-    col = 18
-  else:
-    col = 19
-
-#   print("estado -> ", estado)
-#   print("col -> ", col)
-
-  estado = tabla[estado][col]
-
-#   print("char -> ", c)
-#   print("estado -> ",estado)
+errors = {}
 
 
-  if estado == 10:
-
-    if lexema == 'else':
-        print(lexema, 'ELSE')
-    elif lexema == 'if':
-        print(lexema, 'IF')
-    elif lexema == 'int':
-        print(lexema, 'INT')
-    elif lexema == 'return':
-        print(lexema, 'RETURN')
-    elif lexema == 'void':
-        print(lexema, 'VOID')
-    elif lexema == 'while':
-        print(lexema, 'WHILE')
-    else:
-        print(lexema, 'ID')
-
-    lexema = ''
+def getToken(imprime = True):
+    global position, lineNumber, lineStart, lineEnd
+    tokenString = "" # string for storing token
+    currentToken = None # is a TokenType value
     estado = 0
-    p-=1
-  
-  elif estado == 11:
-    print(lexema, 'NUM')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 12:
-    lexema = c
-    print(lexema, 'PLUS')
-    lexema = ''
-    estado = 0
- 
-  elif estado == 13:
-    lexema = c
-    print(lexema, 'MINUS')
-    lexema = ''
-    estado = 0
-
-  elif estado == 14:
-    print(lexema, 'OVER')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 15:
-    lexema+=c
-    print(lexema, 'COMMENT_START')
-    lexema = ''
-    estado = 0
-
-  elif estado == 16:
-    print(lexema, 'LT')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 17:
-    lexema+=c
-    print(lexema, 'LT_OR_EQ')
-    lexema = ''
-    estado = 0
-
-  elif estado == 18:
-    print(lexema, 'GT')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 19:
-    lexema+=c
-    print(lexema, 'GT_OR_EQ')
-    lexema = ''
-    estado = 0
-
-  elif estado == 20:
-    print(lexema, 'ASSIGN')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 21:
-    lexema+=c
-    print(lexema, 'EQEQ')
-    lexema = ''
-    estado = 0
-
-  elif estado == 22:
-    print(lexema, 'NOT_EQ')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 23:
-    lexema = c
-    print(lexema, 'SEMICOLON')
-    lexema = ''
-    estado = 0
-
-  elif estado == 24:
-    lexema = c
-    print(lexema, 'COLON')
-    lexema = ''
-    estado = 0
-
-  elif estado == 25:
-    lexema = c
-    print(lexema, 'L_PAREN')
-    lexema = ''
-    estado = 0
-
-  elif estado == 26:
-    lexema = c
-    print(lexema, 'R_PAREN')
-    lexema = ''
-    estado = 0
-
-  elif estado == 27:
-    lexema = c
-    print(lexema, 'L_BRACKET')
-    lexema = ''
-    estado = 0
-
-  elif estado == 28:
-    lexema = c
-    print(lexema, 'R_BRACKET')
-    lexema = ''
-    estado = 0
-  
-  elif estado == 29:
-    lexema = c
-    print(lexema, 'L_BRACE')
-    lexema = ''
-    estado = 0
-  
-  elif estado == 30:
-    lexema = c
-    print(lexema, 'R_BRACE')
-    lexema = ''
-    estado = 0
-
-  elif estado == 31:
-    print(lexema, 'TIMES')
-    lexema = ''
-    estado = 0
-    p-=1
-
-  elif estado == 32:
-    lexema+=c
-    print(lexema, 'COMMENT_END')
-    lexema = ''
-    estado = 0
-
-  elif estado == 33:
-    print (' ERROR')
-    p += 1
-
-  if estado != 0:
-    lexema += c
-
-  p+=1
     
+    while(position <= programLength): # change this to progLen
+      c = program[position] # current char
+      if c.isalpha():
+        col = 0
+      elif c.isdigit():
+        col = 1
+      elif c == '+':
+        col = 2
+      elif c == '-':
+        col = 3
+      elif c == '/':
+        col = 4
+      elif c == '<':
+        col = 5
+      elif c == '>':
+        col = 6
+      elif c == '=':
+        col = 7
+      elif c == '!':
+        col = 8
+      elif c == ';':
+        col = 9
+      elif c == ',':
+        col = 10
+      elif c == '(':
+        col = 11
+      elif c == ')':
+        col = 12
+      elif c == '[':
+        col = 13
+      elif c == ']':
+        col = 14
+      elif c == '{':
+        col = 15
+      elif c == '}':
+        col = 16
+      elif c == '*':
+        col = 17
+      elif c in b:
+        col = 18
+        if c == '$':
+          currentToken = TokenType.ENDFILE
+        if c == '\n':
 
+          if lineNumber == 1:
+            lineStart = 0
+          lineEnd = position-1
+
+          # print("line number: ", lineNumber)
+          # print("line starts at: ", lineStart)
+          # print("char at line start: ", program[lineStart])
+          # print("line ends at: ", lineEnd)
+          # print("char at line end: ", program[lineEnd])
+
+          if lineNumber in errors.keys():
+            s_string = " " * ((lineEnd - lineStart) + 1)
+
+            line_errors = errors[lineNumber]
+
+            print('\n')
+            for e in line_errors:
+              print(f'Linea {lineNumber}: Caractér Invalido\n')
+              print(program[lineStart:lineEnd+1])
+              s_string = s_string[:e] + '^' + s_string[e+1:]
+              print(s_string)
+              s_string.replace('^', ' ')
+              print('\n')
+
+          lineStart = position+1
+          lineEnd = 0
+          lineNumber+=1
+      else:
+        col = 19
+
+      estado = tabla[estado][col]
+
+      if estado == 10:
+        if tokenString == 'else':
+            currentToken = TokenType.ELSE
+        elif tokenString == 'if':
+            currentToken = TokenType.IF
+        elif tokenString == 'int':
+            currentToken = TokenType.INT
+        elif tokenString == 'return':
+            currentToken = TokenType.RETURN
+        elif tokenString == 'void':
+            currentToken = TokenType.VOID
+        elif tokenString == 'while':
+            currentToken = TokenType.WHILE
+        else:
+            currentToken = TokenType.ID
+
+        estado = 0
+        position-=1
+      
+      elif estado == 11:
+        currentToken = TokenType.NUM
+        estado = 0
+        position-=1
+
+      elif estado == 12:
+        tokenString = c
+        currentToken = TokenType.PLUS
+        estado = 0
     
-  
+      elif estado == 13:
+        tokenString = c
+        currentToken = TokenType.MINUS
+        estado = 0
 
-  
+      elif estado == 14:
+        currentToken = TokenType.OVER
+        estado = 0
+        position-=1
+
+      elif estado == 15:
+        tokenString+=c
+        currentToken = TokenType.COMMENT_START
+        estado = 0
+
+      elif estado == 16:
+        currentToken = TokenType.LT
+        estado = 0
+        position-=1
+
+      elif estado == 17:
+        tokenString+=c
+        currentToken = TokenType.LT_OR_EQ
+        estado = 0
+
+      elif estado == 18:
+        currentToken = TokenType.GT
+        estado = 0
+        position-=1
+
+      elif estado == 19:
+        tokenString+=c
+        currentToken = TokenType.GT_OR_EQ
+        estado = 0
+
+      elif estado == 20:
+        currentToken = TokenType.ASSIGN
+        estado = 0
+        position-=1
+
+      elif estado == 21:
+        tokenString+=c
+        currentToken = TokenType.EQEQ
+        estado = 0
+
+      elif estado == 22:
+        currentToken = TokenType.NOT_EQ
+        estado = 0
+        position-=1
+
+      elif estado == 23:
+        tokenString = c
+        currentToken = TokenType.SEMI
+        estado = 0
+
+      elif estado == 24:
+        tokenString = c
+        currentToken = TokenType.COLON
+        estado = 0
+
+      elif estado == 25:
+        tokenString = c
+        currentToken = TokenType.L_PAREN
+        estado = 0
+
+      elif estado == 26:
+        tokenString = c
+        currentToken = TokenType.R_PAREN
+        estado = 0
+
+      elif estado == 27:
+        tokenString = c
+        currentToken = TokenType.L_BRACKET
+        estado = 0
+
+      elif estado == 28:
+        tokenString = c
+        currentToken = TokenType.R_BRACKET
+        estado = 0
+      
+      elif estado == 29:
+        tokenString = c
+        currentToken = TokenType.L_BRACE
+        estado = 0
+      
+      elif estado == 30:
+        tokenString = c
+        currentToken = TokenType.R_BRACE
+        estado = 0
+
+      elif estado == 31:
+        currentToken = TokenType.TIMES
+        estado = 0
+        position-=1
+
+      elif estado == 32:
+        tokenString+=c
+        currentToken = TokenType.COMMENT_END
+        estado = 0
+
+      elif estado == 33:
+        currentToken = TokenType.ERROR
+
+        if lineNumber not in errors.keys():
+          arr = []
+          arr.append(position)
+          errors[lineNumber] = arr
+        else:
+          errors[lineNumber] = errors[lineNumber].append(position)        
+
+        position += 1
+        estado = 0
+
+      if estado != 0:
+        tokenString += c
+
+      position+=1
+
+      if currentToken is not None:
+            if imprime:
+                print("(", currentToken , ",",f'"{" " if currentToken is TokenType.ERROR else tokenString}"', ")")
+            return currentToken, tokenString
+
+          
+        
+
+        
+      
+
+      
