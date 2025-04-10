@@ -1,6 +1,6 @@
 from globalTypes import *
 
-
+# function to pass global variables
 def globales(prog, pos, long, lineno, lstart = 0, lend = 0):
     global program
     global position
@@ -52,26 +52,21 @@ b = ' \t\n$'
                                        
 '''
 
-a = '''int gcd(int u, int v) # {
-        if (v == 0) return u ;
-        else return gcd(v, u-u/v*v);
-        /* u-u/v*v == u mod v */
-    }$'''
-
-print(a[0])
-
+# definition for tab, next line and end of program
 b = ' \t\n$'
 
+# errors dictionary
 errors = {}
 
-
+# get token function
 def getToken(imprime = True):
     global position, lineNumber, lineStart, lineEnd
     tokenString = "" # string for storing token
     currentToken = None # is a TokenType value
     estado = 0
     
-    while(position <= programLength): # change this to progLen
+    # read next position 
+    while(position <= programLength): 
       c = program[position] # current char
       if c.isalpha():
         col = 0
@@ -111,19 +106,14 @@ def getToken(imprime = True):
         col = 17
       elif c in b:
         col = 18
-        if c == '$':
+        if c == '$': # end of program
           currentToken = TokenType.ENDFILE
-        if c == '\n':
 
+        # check if there is new line to print errors
+        if c == '\n' or c == '$':
           if lineNumber == 1:
             lineStart = 0
           lineEnd = position-1
-
-          # print("line number: ", lineNumber)
-          # print("line starts at: ", lineStart)
-          # print("char at line start: ", program[lineStart])
-          # print("line ends at: ", lineEnd)
-          # print("char at line end: ", program[lineEnd])
 
           if lineNumber in errors.keys():
             s_string = " " * ((lineEnd - lineStart) + 1)
@@ -134,19 +124,24 @@ def getToken(imprime = True):
             for e in line_errors:
               print(f'Linea {lineNumber}: Caractér Invalido\n')
               print(program[lineStart:lineEnd+1])
-              s_string = s_string[:e] + '^' + s_string[e+1:]
+              pos = e - lineStart
+              tmp = s_string
+              s_string = s_string[:pos] + '^' + s_string[pos+1:]
               print(s_string)
-              s_string.replace('^', ' ')
+              s_string = tmp
               print('\n')
 
+          s_string = ''
           lineStart = position+1
           lineEnd = 0
           lineNumber+=1
       else:
         col = 19
 
+      # update state
       estado = tabla[estado][col]
 
+      # check for different accept states
       if estado == 10:
         if tokenString == 'else':
             currentToken = TokenType.ELSE
@@ -276,24 +271,31 @@ def getToken(imprime = True):
         currentToken = TokenType.COMMENT_END
         estado = 0
 
+      # check error state
       elif estado == 33:
         currentToken = TokenType.ERROR
 
+        # add error position to errors dictionary
         if lineNumber not in errors.keys():
           arr = []
           arr.append(position)
           errors[lineNumber] = arr
         else:
-          errors[lineNumber] = errors[lineNumber].append(position)        
+          arr = errors[lineNumber]
+          arr.append(position)  
+          errors[lineNumber] = arr    
 
         position += 1
         estado = 0
 
+      # build token String
       if estado != 0:
         tokenString += c
 
+      # move to next pos
       position+=1
 
+      # print if currentToken has value
       if currentToken is not None:
             if imprime:
                 print("(", currentToken , ",",f'"{" " if currentToken is TokenType.ERROR else tokenString}"', ")")

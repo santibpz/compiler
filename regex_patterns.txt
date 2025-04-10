@@ -1,0 +1,11 @@
+# 1. Regex for keywords: else, if, int, return, void, while
+Regex: \b(?:else|if|int|return|void|while)\b
+
+# 2. Regex for digits 0 through 9
+Regex: [0-9]
+
+# 3. Regex for one or more alphabetic characters (a-z, A-Z)
+Regex: [a-zA-Z]+
+
+# 4. Regex for single-character operators and delimiters: c d + - / < > = ! ; , ( ) [ ] { } *
+Regex: [\w\d+\-/<>=!;,()\[\]{}*]
