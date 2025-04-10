@@ -115,6 +115,12 @@ def getToken(imprime = True):
             lineStart = 0
           lineEnd = position-1
 
+          # print("line number: ", lineNumber)
+          # print("line starts at: ", lineStart)
+          # print("char at line start: ", program[lineStart])
+          # print("line ends at: ", lineEnd)
+          # print("char at line end: ", program[lineEnd])
+
           if lineNumber in errors.keys():
             s_string = " " * ((lineEnd - lineStart) + 1)
 
