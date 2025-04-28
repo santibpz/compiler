@@ -42,3 +42,5 @@ class StatementKind(Enum):
     Return = 'Return'
     If = 'If'
     Expr = 'Expression'
+    Call = 'Call'
+    Args = 'Arguments'

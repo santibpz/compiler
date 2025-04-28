@@ -28,6 +28,7 @@ class ExpressionType(Enum):
     Expr = 9 # Expression
     If = 10 # If statement
     Assign = 11 # Assign Op =
+    Args = 12 # Arguments
 
 # TreeNode class
 class TreeNode:
@@ -127,25 +128,25 @@ def return_statement():
 def expression():
     t = newNode(ExpressionType.Expr)
     t.value = StatementKind.Expr
-    p = None
+    a = None
     b = None
     while (token==TokenType.ID):
-    
         p = newNode(ExpressionType.Assign)
         p.child[0] = var()
         p.value = token
-        b = p
+        if a != None:
+            a.child[1] = p
+            a = p
+        else:
+            a = p
+            b = a
         match(TokenType.ASSIGN)
-    
-    t.child[0] = b
 
-    # child[0] could not be present
-    if t.child[0] == None:
-        t.child[0] = simple_expression()
+    if b!=None:
+        a.child[1] = simple_expression()
+        t.child[0] = b
     else:
-        if p!=None:
-            p.child[1] = simple_expression()
-        # t.child[1] = simple_expression()
+        t.child[0] = simple_expression()
 
     return t
     
@@ -219,18 +220,11 @@ def factor():
         t.value = int(tokenString)
         match(token)
     elif token == TokenType.ID:
-        t = newNode(ExpressionType.Id)
-        t.value = tokenString
-        match(token)
-
+        next_token = peek()
         # check for call production
-        if(token==TokenType.L_PAREN):
-            pos-=1
-            token=prog[pos]
+        if next_token==TokenType.L_PAREN:
             t = call()
         else:
-            pos-=1
-            token=prog[pos]
             t = var()
     # check if token is ( expression )
     elif token == TokenType.L_PAREN:
@@ -243,24 +237,13 @@ def factor():
 #27. call → ID ( args )
 def call():
     t = newNode(ExpressionType.Call)
-    
-    # Match the ID (function name)
-    if token != TokenType.ID:
-        raise SyntaxError("Expected identifier in function call")
-    t.value = tokenString  # Store the function name
+    t.value = StatementKind.Call
     match(TokenType.ID)
-
-    # Match opening parenthesis
-    if token != TokenType.L_PAREN:
-        raise SyntaxError("Expected '(' in function call")
     match(TokenType.L_PAREN)
-
-     # Parse arguments (args production)
-    t.child[0] = args()  # args() will return a list of argument expressions
-    
-    # Match closing parenthesis
+    # Match the ID (function name)
     if token != TokenType.R_PAREN:
-        raise SyntaxError("Expected ')' in function call")
+        t.child[0] = args()
+
     match(TokenType.R_PAREN)
     
     return t
@@ -269,7 +252,10 @@ def call():
 def args():
     t = None
     if token != TokenType.R_PAREN:
-        t = arg_list()
+        t = newNode(ExpressionType.Args)
+        t.value = StatementKind.Args
+        t.child[0] = arg_list()
+    
     return t
 
 # 29. arg-list → expression { , expression }
@@ -290,7 +276,7 @@ def parse(imprime = True):
     token, tokenString = getToken(False)
     print(token)
     print(tokenString)
-    t = expression()
+    t = factor()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")
     if imprime:
@@ -319,10 +305,17 @@ def printTree(tree):
             print("Assign: ", tree.value)
         elif tree.expression == ExpressionType.Var:
             print("Var: ", tree.value)
+        elif tree.expression == ExpressionType.Call:
+            print("Call: ", tree.value)
+        elif tree.expression == ExpressionType.Args:
+            print("Arguments: ", tree.value)
         elif tree.expression == ExpressionType.Num:
             print("Num: ", tree.value) # NUM
         else:
             print("Unrecognized expression type")
+
+        if tree.sibling != None:
+            printTree(tree.sibling)
         for child in tree.child:
             printTree(child)
     indentno-=2 #UNINDENT

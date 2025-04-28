@@ -308,7 +308,25 @@ def getToken(imprime = True):
             return currentToken, tokenString
 
           
-        
+def peek():
+    global position, program, programLength, lineNumber, lineStart, lineEnd
+    # Save current state
+    saved_pos = position
+    saved_lineNumber = lineNumber
+    saved_lineStart = lineStart
+    saved_lineEnd = lineEnd
+    
+    # Get the next token (without printing)
+    next_token, next_tokenString = getToken(imprime=False)
+    
+    # Restore state (so the actual token consumption isn't affected)
+    position = saved_pos
+    lineNumber = saved_lineNumber
+    lineStart = saved_lineStart
+    lineEnd = saved_lineEnd
+    
+    return next_token
+
 
         
       
