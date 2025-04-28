@@ -36,3 +36,9 @@ class TokenType(Enum):
     R_BRACE = '}'
     COMMENT_START = '/*'
     COMMENT_END = '*/'
+
+class StatementKind(Enum):
+    While = 'While'
+    Return = 'Return'
+    If = 'If'
+    Expr = 'Expression'

@@ -1,7 +1,7 @@
 from globalTypes import *
 from lexer import *
 
-f = open('sample.c-', 'r')
+f = open('prueba.c-', 'r')
 program = f.read() 		# lee todo el archivo a compilar
 f.close()                       # cerrar el archivo con programa fuente
 progLong = len(program) 	# longitud original del programa
