@@ -29,6 +29,13 @@ class ExpressionType(Enum):
     If = 10 # If statement
     Assign = 11 # Assign Op =
     Args = 12 # Arguments
+    Return = 13 # Return
+    VarDeclaration = 14 # var declaration
+    Param = 15 # param
+    Statement = 16 # statement
+    Declaration = 17
+    FunDeclaration = 18
+    LocalDeclaration = 19
 
 # TreeNode class
 class TreeNode:
@@ -68,27 +75,165 @@ def match(expected):
 
 # 1. program → declaration-list
 def program():
-    root = declarationList()
-    return root
+    t = declaration_list()
+    return t
 
 # 2. declaration-list → declaration { declaration }
-# def declaration_list():
-#     subtree = declaration()
-    # while token in 
+def declaration_list():
+    t = declaration()
+    p = t
+    while(token != TokenType.ENDFILE and token != TokenType.SEMI and token != TokenType.R_BRACE):
+        q = declaration()
+        p.sibling = q
+        p = q
+    return t
 
 #3. declaration → var-declaration | fun-declaration
+def declaration():
+    t = newNode(ExpressionType.Declaration)
+    
+    next_token = peek(2)
+
+    if next_token == TokenType.L_PAREN:
+        t.child[0] = fun_declaration()
+    else:
+        t.child[0] = var_declaration()
+    return t
+
+
 
 # 4. var-declaration → type-specifier ID [ “[“ NUM “]” ]  ;
+def var_declaration():
+    t = newNode(ExpressionType.VarDeclaration)
+    t.value = token
+    
+    if token == TokenType.INT:
+        match(TokenType.INT)
+    elif token == TokenType.VOID:
+        match(TokenType.VOID)
+    
+    match(TokenType.ID)
 
-# def var_declaration():
-#     if token==TokenType.INT or token==TokenType.VOID:
-#         node = newNode(ExpressionType.TypeSpecifier)
-#         node.value = token
-#         match(token)
-#     match()
+    if token == TokenType.L_BRACKET:
+        match(TokenType.L_BRACKET)
+        match(TokenType.NUM)
+        match(TokenType.R_BRACKET)
+    
+    match(TokenType.SEMI)
+    
+    return t
 
+# 6. fun-declaration → type-specifier ID ( params )  compound-stmt
+def fun_declaration():
+    t = newNode(ExpressionType.FunDeclaration)
+
+    if token == TokenType.INT:
+        match(TokenType.INT)
+    elif token == TokenType.VOID:
+        match(TokenType.VOID)
+    
+    match(TokenType.ID)
+
+    match(TokenType.L_PAREN)
+
+    t.child[0] = params()
+
+    match(TokenType.R_PAREN)
+
+    t.child[1] = compound_stmt()
+
+    return t
+
+# 7. params → params-list | void
+def params():
+    t = newNode(ExpressionKind.Params)
+    if token == TokenType.VOID or TokenType.INT:
+        next_token = peek()
+        if next_token == TokenType.ID:
+            t.child[0] = params_list()
+        else:
+            if token == TokenType.VOID:
+                match(TokenType.VOID)
+    return t
+
+# 8. params-list → param  { , param }
+def params_list():
+    t = param()
+    a = t
+    p = None
+    while token == TokenType.COLON:
+        match(TokenType.COLON)
+        p = param()
+        t.sibling = p
+        t = p
+    return a
+
+# 9. param → type-specifier ID [ “[“ “]” ]
+def param():
+    t = newNode(ExpressionType.Param)
+    t.value = ExpressionKind.Param
+    if token == TokenType.INT:
+        match(TokenType.INT)
+    elif token == TokenType.VOID:
+        match(TokenType.VOID)
+    match(TokenType.ID)
+    if(token==TokenType.L_BRACKET):
+        match(TokenType.L_BRACKET)
+        match(TokenType.R_BRACKET)
+    return t
+
+# 10. compound-stmt →  “{“ local-declarations statement-list “}”
+def compound_stmt():
+    t = newNode(StatementKind.Compound)
+    match(TokenType.L_BRACE)
+    t.child[0] = local_declarations()
+    t.child[1] = statement_list()
+    match(TokenType.R_BRACE)
+
+    return t
+
+# 11. local-declarations → empty { var-declaration }	
+def local_declarations():
+    t = newNode(ExpressionType.LocalDeclaration)
+    while token == TokenType.INT or token == TokenType.VOID:
+        t = var_declaration()
+    return t
+
+# 12. statement-list → empty { statement }
+def statement_list():
+    t = newNode(ExpressionType.Statement)
+    while (token != TokenType.ENDFILE and token != TokenType.SEMI and token != TokenType.ELSE and token != TokenType.R_BRACE):
+        t.child[0] = statement()
+    return t
 
 #13. statement → expression-stmt | compound-stmt | selection-stmt | iteration-stmt | return-stmt
+def statement():
+    t = None
+    # compound statement
+    if token == TokenType.L_BRACE:
+        t = compound_stmt()
+    # selection statement
+    elif token == TokenType.IF:
+        t = selection_stmt()
+    # iteration statement
+    elif token == TokenType.WHILE:
+        t = iteration_stmt()
+    # return statement
+    elif token == TokenType.RETURN:
+        t = return_stmt()
+    # expression statement
+    elif token == TokenType.SEMI or token == TokenType.L_PAREN or token == TokenType.ID or token == TokenType.NUM:
+        t = expression_stmt()
+    
+    return t
+
+# 14. expression-stmt → [ expression ] ; 
+def expression_stmt():
+    t = None
+    if token != TokenType.SEMI:
+        t = expression()
+    match(TokenType.SEMI)
+    return t
 
 #15. selection-stmt →  if (expression) statement [ else statement ]
 def selection_stmt():
@@ -106,7 +251,8 @@ def selection_stmt():
 
 # 16. iteration-stmt → while (expression) statement
 def iteration_stmt():
-    t = newNode(StatementKind.While)
+    t = newNode(ExpressionType.While)
+    t.value = StatementKind.While
     match(TokenType.WHILE)
     match(TokenType.L_PAREN)
     t.child[0] = expression()
@@ -115,8 +261,9 @@ def iteration_stmt():
     return t
 
 # 17. return-stmt → return [ expression ] ; 
-def return_statement():
-    t = newNode(StatementKind.Return)
+def return_stmt():
+    t = newNode(ExpressionType.Return)
+    t.value = tokenString
     match(TokenType.RETURN)
     # check if expression is next
     if (token == TokenType.L_PAREN) or (token == TokenType.ID) or (token == TokenType.NUM):
@@ -128,36 +275,36 @@ def return_statement():
 def expression():
     t = newNode(ExpressionType.Expr)
     t.value = StatementKind.Expr
-    a = None
-    b = None
-    while (token==TokenType.ID):
-        p = newNode(ExpressionType.Assign)
-        p.child[0] = var()
-        p.value = token
-        if a != None:
-            a.child[1] = p
-            a = p
-        else:
-            a = p
-            b = a
-        match(TokenType.ASSIGN)
 
-    if b!=None:
-        a.child[1] = simple_expression()
-        t.child[0] = b
-    else:
+    next_token = peek()
+
+    if next_token != TokenType.ASSIGN:
         t.child[0] = simple_expression()
+    else: 
+        a = None
+        b = None
+        while (token==TokenType.ID):
+            p = newNode(ExpressionType.Assign)
+            p.child[0] = var()
+            p.value = token
+            if a != None:
+                a.child[1] = p
+                a = p
+            else:
+                a = p
+                b = a
+            match(TokenType.ASSIGN)
 
+        if b!=None:
+            a.child[1] = simple_expression()
+            t.child[0] = b
+        
     return t
     
 
 # 19. var → ID [ “[“ expression “]” ]
 def var():
     t = newNode(ExpressionType.Var)
-
-    # Match the ID (function name)
-    if token != TokenType.ID:
-        raise SyntaxError("Expected identifier in Var ")
     t.value = tokenString 
     match(TokenType.ID)
 
@@ -240,7 +387,6 @@ def call():
     t.value = StatementKind.Call
     match(TokenType.ID)
     match(TokenType.L_PAREN)
-    # Match the ID (function name)
     if token != TokenType.R_PAREN:
         t.child[0] = args()
 
@@ -276,7 +422,7 @@ def parse(imprime = True):
     token, tokenString = getToken(False)
     print(token)
     print(tokenString)
-    t = factor()
+    t = program()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")
     if imprime:
@@ -305,6 +451,8 @@ def printTree(tree):
             print("Assign: ", tree.value)
         elif tree.expression == ExpressionType.Var:
             print("Var: ", tree.value)
+        elif tree.expression == ExpressionType.Return:
+            print("Return: ", tree.value)
         elif tree.expression == ExpressionType.Call:
             print("Call: ", tree.value)
         elif tree.expression == ExpressionType.Args:
