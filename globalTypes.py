@@ -46,6 +46,10 @@ class StatementKind(Enum):
     Call = 'Call'
     Args = 'Arguments'
 
+class DeclarationKind(Enum):
+    LocalDeclaration = 'Local'
+
+    
 class ExpressionKind(Enum):
     Param = 'Param'
     Params = 'Params'

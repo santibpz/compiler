@@ -305,7 +305,7 @@ def getToken(imprime = True):
       if currentToken is not None:
             if imprime:
                 print("(", currentToken , ",",f'"{" " if currentToken is TokenType.ERROR else tokenString}"', ")")
-            return currentToken, tokenString
+            return currentToken, tokenString, lineNumber
 
           
 def peek(no = 1):
@@ -318,7 +318,7 @@ def peek(no = 1):
     
     while no > 0:
       # Get the next token (without printing)
-      next_token, next_tokenString = getToken(imprime=False)
+      next_token, _, _ = getToken(imprime=False)
       no-=1
     
     # Restore state (so the actual token consumption isn't affected)
