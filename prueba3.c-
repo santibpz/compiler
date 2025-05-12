@@ -1,0 +1,10 @@
+int x[10];
+
+int minloc ( int all, int low, int high )
+{
+    int i; int k;
+    k = low;
+
+    i = low + 1;
+    return k;
+}
