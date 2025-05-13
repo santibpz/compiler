@@ -8,6 +8,11 @@ class SymbolTable:
     def insert(self, name, info):
         self.entries[name] = info
 
+    def update(self, name, info):
+        table = self
+        if name in table.entries:
+            self.entries[name] = info
+
     def lookup(self, name):
         table = self
         while table is not None:
@@ -15,8 +20,6 @@ class SymbolTable:
                 return table.entries[name]
             table = table.parent
         return None
-
-
 
 # Symbol table stack
 symbolTableStack = []
@@ -38,7 +41,7 @@ def st_insert(name, type, scope, lineno, location, value=None, size=None, params
         entry = {
             "type": type,
             "scope": scope,
-            "line": lineno,
+            "lines": [lineno],
             "location": location,
             "value": value,
             "size": size,
@@ -48,6 +51,9 @@ def st_insert(name, type, scope, lineno, location, value=None, size=None, params
     else:
         print("entry: ", name, " already exists")
 
+def st_update(name, entry):
+    currentSymbolTable.update(name, entry)
+    
 def st_lookup(name):
     return currentSymbolTable.lookup(name)
 
@@ -74,14 +80,6 @@ def st_lookup(name):
 # Procedure printSymTab prints a formatted 
 # listing of the symbol table contents 
 # to the listing file
-def printSymTab():
-    print("Var Name  Location   type   scope   lineno   value   size   params")
-    print("--------  --------   ----   -----   ------   -----   ----   ------")
-    for name in SymbolTable:
-        print(f'{name:8}\t{SymbolTable[name][0]}\t', end = '')
-        for i in range(len(SymbolTable[name])-1):
-            print(f'{SymbolTable[name][i+1]}\t', end = '')
-        print()
 
 def printSymbolTableStack():
     print("=" * 80)
@@ -90,12 +88,15 @@ def printSymbolTableStack():
         if table is not None:
             print(f"Scope {table.scope_name if hasattr(table, 'scope_name') else i}:")
             print("-" * 80)
-            print(f"{'Name':15} {'Type':10} {'Scope':10} {'Lines':15} {'Loc':6} {'Value':10} {'Size':6} {'Params'}")
+            print(f"{'Name':15} {'Type':10} {'Scope':10} {'Lines':20} {'Loc':6} {'Value':10} {'Size':6} {'Params'}")
             print("-" * 80)
             for name, entry in table.entries.items():
+                # Convert lines list to string, e.g., [2, 4] → "2,4"
+                lines_str = ','.join(str(line) for line in entry.get('lines', []))
                 print(f"{name:15} {str(entry.get('type')):10} {entry.get('scope'):10} "
-                    f"{str(entry.get('lines')):15} {entry.get('location'):6} "
+                    f"{lines_str:20} {entry.get('location'):6} "
                     f"{str(entry.get('value')):10} {str(entry.get('size')):6} "
                     f"{str(entry.get('params'))}")
             print("-" * 80)
     print("=" * 80)
+

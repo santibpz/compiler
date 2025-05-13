@@ -334,6 +334,7 @@ def expression():
 # 19. var → ID [ “[“ expression “]” ]
 def var():
     t = newNode(ExpressionType.Var)
+    t.lineno = lineno
     t.value = tokenString 
     match(TokenType.ID)
 
@@ -448,7 +449,7 @@ def arg_list():
 def parse(imprime = True):
     global token, tokenString, lineno
     token, tokenString, lineno = getToken(False)
-    t = declaration_list()
+    t = program()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")
     if imprime:
