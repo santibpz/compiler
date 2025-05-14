@@ -101,35 +101,43 @@ def SemanticError(errorMessage, lineno):
     print(f">>> {errorMessage} at line {lineno}\n", end='')
 
 
-# # Procedure checkNode performs type checking at a single tree node
-# def checkNode(t):
-#     if t.nodekind == NodeKind.ExpK:
-#         if t.exp == ExpKind.OpK:
-#             if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
-#                 typeError(t,"Op applied to non-integer")
-#             if ((t.op == TokenType.EQ) or (t.op == TokenType.LT)):
-#                 t.type = ExpType.Boolean
-#             else:
-#                 t.type = ExpType.Integer
-#         elif t.exp in [ExpKind.ConstK, ExpKind.IdK]:
-#             t.type = ExpType.Integer
-#     elif t.nodekind == NodeKind.StmtK:
-#         if t.stmt == StmtKind.IfK:
-#             if (t.child[0].type == ExpType.Integer):
-#                 typeError(t.child[0],"if test is not Boolean")
-#         elif t.stmt == StmtKind.AssignK:
-#             if (t.child[0].type != ExpType.Integer):
-#                 typeError(t.child[0],"assignment of non-integer value")
-#         elif t.stmt == StmtKind.WriteK:
-#             if (t.child[0].type != ExpType.Integer):
-#                 typeError(t.child[0],"write of non-integer value")
-#         elif t.stmt == StmtKind.RepeatK:
-#             if (t.child[1].type == ExpType.Integer):
-#                 typeError(t.child[1],"repeat test is not Boolean")
+# Procedure checkNode performs type checking at a single tree node
+def checkNode(t):
+    if t.expression == ExpressionType.Var or t.expression == ExpressionType.Call:
+        entry = st_lookup(t.value)
+        if entry is not None:
+            exp_type = entry["type"]
+            if exp_type == ExpType.Void.value:
+                t.type = ExpType.Void
+            elif exp_type == ExpType.Integer.value:
+                t.type = ExpType.Integer
+
+    elif t.expression == ExpressionType.Num:
+        t.type = ExpType.Integer
+
+    elif t.expression == ExpressionType.Assign:
+        if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
+             typeError(t,"Assignment of non-integer value")
+        # else:
+        #     entry = st_lookup(t.child[0].value)
+        #     if entry is not None:
+        #         entry["value"] = t.child[1].value
+        #         st_update(t.child[0].value, entry)
+    
+    elif t.expression == ExpressionType.Addop or t.expression == ExpressionType.Mulop:
+        if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
+             typeError(t,f"Expected both operands of {t.value} to be of type {ExpType.Integer.value}, but type mismatch was found\n")
+        else:
+            t.type = ExpType.Integer
+    
+    
+
+
+        
 
 # Procedure typeCheck performs type checking 
 # by a postorder syntax tree traversal
 
 
-# def typeCheck(syntaxTree):
-#     traverse(syntaxTree,nullProc,checkNode)
+def typeCheck(syntaxTree):
+    traverse(syntaxTree,nullProc,checkNode)

@@ -11,6 +11,7 @@ class TreeNode:
         self.args_num = None
         self.params_num = None
         self.lineno = None
+        self.type = None
 
 # TokenType
 class TokenType(Enum):
@@ -89,3 +90,8 @@ class DeclarationKind(Enum):
 class ExpressionKind(Enum):
     Param = 'Param'
     Params = 'Params'
+
+# ExpType is used for type checking
+class ExpType(Enum):
+    Void = 'void'
+    Integer = 'int'

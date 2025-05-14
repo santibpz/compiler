@@ -317,6 +317,7 @@ def expression():
             next_token = peek()
             if next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET:
                 p = newNode(ExpressionType.Assign)
+                p.lineno = lineno
                 p.child[0] = var()
                 p.value = tokenString
                 if a != None:
@@ -372,6 +373,7 @@ def additive_expression():
     t = term()
     while ((token==TokenType.PLUS) or (token==TokenType.MINUS)):
         p = newNode(ExpressionType.Addop)
+        p.lineno = lineno
         p.child[0] = t
         p.value = tokenString
         t = p
@@ -385,6 +387,7 @@ def term():
     t = factor()
     while((token==TokenType.TIMES) or (token==TokenType.OVER)):
         p = newNode(ExpressionType.Mulop)
+        p.lineno = lineno
         p.value = tokenString
         p.child[0] = t
         t = p

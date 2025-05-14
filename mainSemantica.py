@@ -2,7 +2,7 @@ from globalTypes import *
 from Parser import *
 from analyze import *
 
-fileName = "prueba"
+fileName = "prueba4"
 f = open(fileName + '.c-', 'r')
 program = f.read() 		# lee todo el archivo a compilar
 f.close()                       # cerrar el archivo con programa fuente
@@ -20,8 +20,9 @@ if not(Error):
     push_st('global')
     buildSymtab(syntaxTree, True)
     print()
-    # print("Checking Types...")
-    # typeCheck(syntaxTree)
-    # print()
-    # print("Type Checking Finished")
-
+    print("Checking Types...")
+    typeCheck(syntaxTree)
+    print()
+    print("Type Checking Finished")
+    print("final ST ------------------")
+    printSymbolTableStack()

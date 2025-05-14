@@ -39,7 +39,7 @@ def push_st(scope_name):
     currentSymbolTable = new_table
     if scope_name == 'global':
         st_insert('input', 'int', 0, 0, 0)
-        st_insert('output', 'void', 0, 0, 0)
+        st_insert('output', 'void', 0, 0, 0, params=True, params_num=1)
 
 def pop_st():
     global currentSymbolTable
