@@ -8,6 +8,8 @@ class TreeNode:
         self.expression = None
         self.value = None
         self.arr_size = None
+        self.args_num = None
+        self.params_num = None
         self.lineno = None
 
 # TokenType

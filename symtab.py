@@ -13,11 +13,18 @@ class SymbolTable:
         if name in table.entries:
             self.entries[name] = info
 
-    def lookup(self, name):
+    def lookup(self, name, local_search=False):
         table = self
+
+        if local_search:
+            if name in table.entries:
+                return table.entries[name]
+            return None
+
         while table is not None:
             if name in table.entries:
                 return table.entries[name]
+            
             table = table.parent
         return None
 
@@ -30,13 +37,16 @@ def push_st(scope_name):
     new_table = SymbolTable(scope_name, currentSymbolTable)
     symbolTableStack.append(currentSymbolTable)
     currentSymbolTable = new_table
+    if scope_name == 'global':
+        st_insert('input', 'int', 0, 0, 0)
+        st_insert('output', 'void', 0, 0, 0)
 
 def pop_st():
     global currentSymbolTable
     currentSymbolTable = symbolTableStack.pop()
 
-def st_insert(name, type, scope, lineno, location, value=None, size=None, params=False):
-    entry = currentSymbolTable.lookup(name)
+def st_insert(name, type, scope, lineno, location, value=None, size=None, params=False, params_num=None):
+    entry = currentSymbolTable.lookup(name, True)
     if entry is None:
         entry = {
             "type": type,
@@ -45,7 +55,8 @@ def st_insert(name, type, scope, lineno, location, value=None, size=None, params
             "location": location,
             "value": value,
             "size": size,
-            "params": params
+            "params": params,
+            "params_num": params_num
         }
         currentSymbolTable.insert(name, entry)
     else:
@@ -54,7 +65,9 @@ def st_insert(name, type, scope, lineno, location, value=None, size=None, params
 def st_update(name, entry):
     currentSymbolTable.update(name, entry)
     
-def st_lookup(name):
+def st_lookup(name, local_search = False):
+    if local_search:
+        return currentSymbolTable.lookup(name, local_search)
     return currentSymbolTable.lookup(name)
 
 # Procedure st_insert inserts line numbers and
@@ -88,7 +101,7 @@ def printSymbolTableStack():
         if table is not None:
             print(f"Scope {table.scope_name if hasattr(table, 'scope_name') else i}:")
             print("-" * 80)
-            print(f"{'Name':15} {'Type':10} {'Scope':10} {'Lines':20} {'Loc':6} {'Value':10} {'Size':6} {'Params'}")
+            print(f"{'Name':15} {'Type':10} {'Scope':10} {'Lines':20} {'Loc':6} {'Value':10} {'Size':6} {'Params'} {'No. Params'}")
             print("-" * 80)
             for name, entry in table.entries.items():
                 # Convert lines list to string, e.g., [2, 4] → "2,4"
@@ -96,7 +109,7 @@ def printSymbolTableStack():
                 print(f"{name:15} {str(entry.get('type')):10} {entry.get('scope'):10} "
                     f"{lines_str:20} {entry.get('location'):6} "
                     f"{str(entry.get('value')):10} {str(entry.get('size')):6} "
-                    f"{str(entry.get('params'))}")
+                    f"{str(entry.get('params'))} {str(entry.get('params_num')):6}")
             print("-" * 80)
     print("=" * 80)
 

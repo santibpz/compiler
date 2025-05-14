@@ -319,6 +319,9 @@ def peek(no = 1):
     while no > 0:
       # Get the next token (without printing)
       next_token, _, _ = getToken(imprime=False)
+      if next_token == TokenType.ENDFILE:
+        break;
+
       no-=1
     
     # Restore state (so the actual token consumption isn't affected)

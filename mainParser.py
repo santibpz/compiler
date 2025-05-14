@@ -2,7 +2,7 @@
 from globalTypes import *
 from Parser import * # el Parser importa el Scanner
 
-fileName = "prueba3"
+fileName = "prueba"
 f = open(fileName + '.c-', 'r')
 program = f.read() 		# lee todo el archivo a compilar
 f.close()                       # cerrar el archivo con programa fuente

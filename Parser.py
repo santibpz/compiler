@@ -125,7 +125,9 @@ def fun_declaration():
 
     match(TokenType.L_PAREN)
 
-    t.child[1] = params()
+    params_num, t_r = params()
+    t.params_num = params_num
+    t.child[1] = t_r
 
     match(TokenType.R_PAREN)
 
@@ -136,10 +138,11 @@ def fun_declaration():
 # 7. params → params-list | void
 def params():
     t = None
+    params_num = 0
     if token == TokenType.VOID or TokenType.INT:
         next_token = peek()
         if next_token == TokenType.ID:
-            t = params_list()
+            params_num, t = params_list()
         else:
             if token == TokenType.VOID:
                 match(TokenType.VOID)
@@ -148,11 +151,12 @@ def params():
         print(token,tokenString)
         print("      ")
 
-    return t
+    return params_num, t
 
 # 8. params-list → param  { , param }
 def params_list():
     t = param()
+    params_num = 1
     a = t
     p = None
     while token == TokenType.COLON:
@@ -160,7 +164,8 @@ def params_list():
         p = param()
         t.sibling = p
         t = p
-    return a
+        params_num += 1
+    return params_num, a
 
 # 9. param → type-specifier ID [ “[“ “]” ]
 def param():
@@ -303,14 +308,14 @@ def expression():
 
     next_token = peek()
 
-    if next_token != TokenType.ASSIGN:
-        t = simple_expression()
-    else: 
+    if (next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET):
         a = None
         b = None
         while (token==TokenType.ID):
+            if peek(4) == TokenType.SEMI:
+                break;
             next_token = peek()
-            if next_token == TokenType.ASSIGN:
+            if next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET:
                 p = newNode(ExpressionType.Assign)
                 p.child[0] = var()
                 p.value = tokenString
@@ -323,10 +328,11 @@ def expression():
                 match(TokenType.ASSIGN)
             else:
                 break
-
         if b!=None:
             a.child[1] = simple_expression()
             t = b
+    else:
+        t = simple_expression()
         
     return t
     
@@ -413,6 +419,7 @@ def factor():
 #27. call → ID ( args )
 def call():
     t = newNode(ExpressionType.Call)
+    t.lineno = lineno
     t.value = tokenString
     match(TokenType.ID)
     match(TokenType.L_PAREN)
@@ -429,20 +436,23 @@ def args():
     if token != TokenType.R_PAREN:
         t = newNode(ExpressionType.Args)
         t.value = StatementKind.Args
-        t.child[0] = arg_list()
-    
+        args_num, t_c = arg_list()
+        t.child[0] = t_c
+        t.args_num = args_num
     return t
 
 # 29. arg-list → expression { , expression }
 def arg_list():
     t = expression()
     p = t
+    args_num = 1
     while (token==TokenType.COLON):
         match(TokenType.COLON)
         q = expression()
         p.sibling = q
         p = q
-    return t
+        args_num += 1
+    return args_num, t
 
 
 # main parse method

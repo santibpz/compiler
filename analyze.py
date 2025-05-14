@@ -2,8 +2,6 @@ from globalTypes import *
 from symtab import *
 
 Error = False
-location = 0
-
 # counter for variable memory locations
 location = 0
 
@@ -34,7 +32,7 @@ def insertNode(t):
     global location, scope
     if t != None and isinstance(t, TreeNode):
         if t.expression == ExpressionType.VarDeclaration:
-            if st_lookup(t.value) is None:
+            if st_lookup(t.value, True) is None:
                 # not yet in table, so treat as new definition
                 st_insert(t.value, t.child[0], scope, t.lineno, location, size=t.arr_size)
                 location += 1
@@ -43,15 +41,21 @@ def insertNode(t):
                 # add line number of use only
                 print("symbol already in ST")
         
-        elif t.expression == ExpressionType.Var:
+        elif t.expression == ExpressionType.Var or t.expression == ExpressionType.Call:
             if st_lookup(t.value) is None: # found symbol
-                SemanticError(f"Undefined variable '{t.value}'", t.lineno)
-            else:
+                SemanticError(f"Undefined identifier '{t.value}'", t.lineno)
+            else: 
                 entry = st_lookup(t.value)
                 entry["lines"].append(t.lineno)
                 st_update(t.value, entry)
+
+                # check that the number of arguments of a call function match the number of arguments the function definition expects
+                if t.expression == ExpressionType.Call and t.child[0] is not None:
+                    a_n = t.child[0].args_num
+                    p_m = entry["params_num"]
+                    if entry["params_num"] != a_n:
+                        SemanticError(f"Expected {p_m} arguments but {a_n} were given.", t.lineno)
             
-                
         elif t.expression == DeclarationKind.LocalDeclaration:
             scope += 1
             location += 1
@@ -60,10 +64,9 @@ def insertNode(t):
         elif t.expression == ExpressionType.FunDeclaration:
             if (st_lookup(t.value) is None):
                 # not yet in table, so treat as new definition
-                st_insert(t.value, t.child[0], scope, t.lineno, location, params=True)
+                st_insert(t.value, t.child[0], scope, t.lineno, location, params=True, params_num=t.params_num)
                 location+=1
-                # scope += 1
-                # push_st('fun_declaration')
+             
             else:
                 # already in table, so ignore location, 
                 # add line number of use only
@@ -95,7 +98,7 @@ def typeError(t, message):
 
 # syntax error method
 def SemanticError(errorMessage, lineno):
-    print(f">>> {errorMessage} at line {lineno}", end='')
+    print(f">>> {errorMessage} at line {lineno}\n", end='')
 
 
 # # Procedure checkNode performs type checking at a single tree node
