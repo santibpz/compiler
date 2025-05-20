@@ -1,11 +1,12 @@
-int x[10];
+/* some comment */
+int x[10]; 
 int minloc ( int all, int low, int high )
 {
     int i; int x; int k;
     k = low;
     x = a[low];
     i = low + 1;
-    while (i < high)
+    while (i < high) /* check cond */
     {
         if (a[i] < x) {
             x = a[i];
@@ -15,3 +16,16 @@ int minloc ( int all, int low, int high )
     }
     return k;
 }
+
+void tst(void) {
+ int a;
+ a = 1;
+ return;
+}
+
+int main(void) {
+  int c; int a;
+  c = a + tst();
+  return;
+}
+

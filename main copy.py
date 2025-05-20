@@ -1,8 +1,10 @@
 from globalTypes import *
+#from scanner import *
 from Parser import *
 from analyze import *
+from cgen import *
 
-fileName = "prueba2"
+fileName = "prueba"
 f = open(fileName + '.c-', 'r')
 program = f.read() 		# lee todo el archivo a compilar
 f.close()                       # cerrar el archivo con programa fuente
@@ -17,10 +19,11 @@ syntaxTree, Error = parse(False)
 if not(Error):
     print()
     print("Building Symbol Table...")
-    push_st('global')
-    buildSymtab(syntaxTree, True)
+    buildSymtab(syntaxTree, False)
     print()
     print("Checking Types...")
     typeCheck(syntaxTree)
     print()
     print("Type Checking Finished")
+if not(Error):
+    codeGen(syntaxTree, fileName, True)

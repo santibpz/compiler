@@ -118,11 +118,6 @@ def checkNode(t):
     elif t.expression == ExpressionType.Assign:
         if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
              typeError(t,"Assignment of non-integer value")
-        # else:
-        #     entry = st_lookup(t.child[0].value)
-        #     if entry is not None:
-        #         entry["value"] = t.child[1].value
-        #         st_update(t.child[0].value, entry)
     
     elif t.expression == ExpressionType.Addop or t.expression == ExpressionType.Mulop:
         if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
@@ -130,8 +125,11 @@ def checkNode(t):
         else:
             t.type = ExpType.Integer
     
-    
-
+    elif t.expression == ExpressionType.Relop:
+        if ((t.child[0].type != ExpType.Integer) or (t.child[1].type != ExpType.Integer)):
+             typeError(t,f"Invalid operands to binary expression\n")
+        else:
+            t.type = ExpType.Integer
 
         
 

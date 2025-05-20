@@ -70,26 +70,7 @@ def st_lookup(name, local_search = False):
         return currentSymbolTable.lookup(name, local_search)
     return currentSymbolTable.lookup(name)
 
-# Procedure st_insert inserts line numbers and
-# memory locations into the symbol table
-# loc = memory location is inserted only the
-# first time, otherwise ignored
-# def st_insert(name, type, scope, lineno, loc, value=None, size=None, params=None):
-#     if name in SymbolTable:
-#         SymbolTable[name].append(lineno)
-#     else:
-#         SymbolTable[name] = [loc, type, scope, lineno, value, size, params]
-
         
-
-# # Function st_lookup returns the memory 
-# # location of a variable or -1 if not found
-# def st_lookup(name):
-#     if name in SymbolTable:
-#         return SymbolTable[name][0]
-#     else:
-#         return -1
-
 # Procedure printSymTab prints a formatted 
 # listing of the symbol table contents 
 # to the listing file
@@ -100,16 +81,16 @@ def printSymbolTableStack():
     for i, table in enumerate(reversed(symbolTableStack + [currentSymbolTable])):
         if table is not None:
             print(f"Scope {table.scope_name if hasattr(table, 'scope_name') else i}:")
-            print("-" * 80)
-            print(f"{'Name':15} {'Type':10} {'Scope':10} {'Lines':20} {'Loc':6} {'Value':10} {'Size':6} {'Params'} {'No. Params'}")
-            print("-" * 80)
+            print("-" * 100)
+            print(f"{'Name':15} {'Type':10} {'Scope':15} {'Lines':20} {'Loc':6} {'Size':6} {'Params':10} {'No. Params'}")
+            print("-" * 100)
             for name, entry in table.entries.items():
                 # Convert lines list to string, e.g., [2, 4] → "2,4"
                 lines_str = ','.join(str(line) for line in entry.get('lines', []))
-                print(f"{name:15} {str(entry.get('type')):10} {entry.get('scope'):10} "
-                    f"{lines_str:20} {entry.get('location'):6} "
-                    f"{str(entry.get('value')):10} {str(entry.get('size')):6} "
-                    f"{str(entry.get('params'))} {str(entry.get('params_num')):6}")
-            print("-" * 80)
-    print("=" * 80)
+                print(f"{name:15} {str(entry.get('type')):6} {entry.get('scope'):10} \t"
+                    f"{lines_str:15} {entry.get('location'):10} \t"
+                    f"{str(entry.get('size')):6} "
+                    f"{str(entry.get('params')):10} {str(entry.get('params_num')):6}")
+            print("-" * 100)
+    print("=" * 100)
 

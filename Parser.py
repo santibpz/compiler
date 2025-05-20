@@ -31,10 +31,13 @@ def SyntaxError(errorMessage):
 
 def match(expected):
     global token, tokenString, lineno # return lineno
-    if token == TokenType.COMMENT_START:
-        handle_comment()
     if (token == expected):
         token, tokenString, lineno = getToken(False)
+        if token == TokenType.COMMENT_START:
+            while token != TokenType.COMMENT_END:
+                token, tokenString, lineno = getToken(False)
+            token, tokenString, lineno = getToken(False)
+            
     else:
         SyntaxError("unexpected token -> ")
         print(token,tokenString)
@@ -308,30 +311,29 @@ def expression():
 
     next_token = peek()
 
-    if (next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET):
-        a = None
-        b = None
-        while (token==TokenType.ID):
-            if peek(4) == TokenType.SEMI:
-                break;
-            next_token = peek()
-            if next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET:
-                p = newNode(ExpressionType.Assign)
-                p.lineno = lineno
-                p.child[0] = var()
-                p.value = tokenString
-                if a != None:
-                    a.child[1] = p
-                    a = p
-                else:
-                    a = p
-                    b = a
-                match(TokenType.ASSIGN)
+    a = None
+    b = None
+    while (token==TokenType.ID):
+        if peek(4) == TokenType.SEMI or peek(4) == TokenType.LT or peek(4) == TokenType.LT_OR_EQ or (peek(4) == TokenType.GT) or (peek(4)==TokenType.GT_OR_EQ) or (peek(4)==TokenType.EQEQ) or (peek(4)==TokenType.NOT_EQ):
+            break;
+        next_token = peek()
+        if next_token == TokenType.ASSIGN or peek(3) == TokenType.R_BRACKET:
+            p = newNode(ExpressionType.Assign)
+            p.lineno = lineno
+            p.child[0] = var()
+            p.value = tokenString
+            if a != None:
+                a.child[1] = p
+                a = p
             else:
-                break
-        if b!=None:
-            a.child[1] = simple_expression()
-            t = b
+                a = p
+                b = a
+            match(TokenType.ASSIGN)
+        else:
+            break
+    if b!=None:
+        a.child[1] = simple_expression()
+        t = b
     else:
         t = simple_expression()
         
@@ -359,6 +361,7 @@ def simple_expression():
 
     if (token==TokenType.LT_OR_EQ) or (token==TokenType.LT) or (token == TokenType.GT) or (token==TokenType.GT_OR_EQ) or (token==TokenType.EQEQ) or (token==TokenType.NOT_EQ):
         p = newNode(ExpressionType.Relop)
+        p.lineno = lineno
         p.value = tokenString
         p.child[0] = t
         t = p
@@ -462,6 +465,10 @@ def arg_list():
 def parse(imprime = True):
     global token, tokenString, lineno
     token, tokenString, lineno = getToken(False)
+    if token == TokenType.COMMENT_START:
+            while token != TokenType.COMMENT_END:
+                token, tokenString, lineno = getToken(False)
+            token, tokenString, lineno = getToken(False)
     t = program()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")

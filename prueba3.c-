@@ -22,7 +22,7 @@ void main(void)
     int i; int high;
     i = 0;
     high = input();  
-    while (i < high)
+    while (i < high) /* check condition */
     {
         x[i] = input();
         i = i + 1;
