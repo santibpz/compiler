@@ -2,17 +2,14 @@ from globalTypes import *
 from symtab import *
 import sys
 
-# pc = program counter
-pc = 7
-# mp = "memory pointer" points to top of memory (for temp storage)
-mp = 6
-# gp = "global pointer" points to bottom of memory for (global)
-# variable storage
-gp = 5
+
 # accumulator
-ac = 0
-# 2nd accumulator
-ac1 = 1
+acc = '$a0'
+# stack pointer
+sp = '$sp'
+# temporary register
+temp = '$t1'
+
 # TM location number for current instruction emission
 emitLoc = 0
 # Highest TM location emitted so far for use in conjunction with emitSkip,
@@ -24,39 +21,99 @@ def emitComment(c):
     if (TraceCode):
         print("* " + c)
 
-# Procedure emitRO emits a register-only TM instruction, where
+# Procedure emitLI emits a Loas immediate value into register
 # op = the opcode
-# r = target register
-# s = 1st source register
-# t = 2nd source register
+# r = destination register
+# imm = value
 # c = a comment to be printed if TraceCode is TRUE
-def emitRO( op, r, s, t, c):
-    global emitLoc
-    global highEmitLoc
-    print("%3d:  %5s  %d,%d,%d  " % (emitLoc,op,r,s,t), end='')
-    emitLoc += 1
+def emitLI( op, r, imm, c):
+    # global emitLoc
+    # global highEmitLoc
+    print("%s %s %d " % (op,r,imm), end='')
+    # emitLoc += 1
     if (TraceCode):
         print("\t" + c, end='')
     print()
-    if (highEmitLoc < emitLoc):
-        highEmitLoc = emitLoc
+    # if (highEmitLoc < emitLoc):
+    #     highEmitLoc = emitLoc
 
-# Procedure emitRM emits a register-to-memory TM instruction, where
+
+# Procedure emitLW emits a load word in register 'dr' from address contained in 'sr'+offset
 # op = the opcode
-# r = target register
-# d = the offset
-# s = the base register
+# sr = source register
+# off = offset
+# dr = destination register
 # c = a comment to be printed if TraceCode is TRUE
-def emitRM( op, r, d, s, c):
-    global emitLoc
-    global highEmitLoc
-    print("%3d:  %5s  %d,%d(%d) " % (emitLoc,op,r,d,s), end='')
-    emitLoc += 1
+def emitLW( op, dr, off, sr, c):
+    # global emitLoc
+    # global highEmitLoc
+    print("%s %s %s " % (op, dr, f"{off}({sr})"), end='')
+    # emitLoc += 1
     if (TraceCode):
         print("\t" + c, end='')
     print()
-    if (highEmitLoc < emitLoc):
-        highEmitLoc = emitLoc
+    # if (highEmitLoc < emitLoc):
+    #     highEmitLoc = emitLoc}
+
+
+
+
+# Procedure emitSW emits a store word in register 'sr' into RAM at address contained in 'dr'
+# op = the opcode
+# sr = source register
+# off = offset
+# dr = destination register
+# c = a comment to be printed if TraceCode is TRUE
+def emitSW( op, sr, off, dr, c):
+    # global emitLoc
+    # global highEmitLoc
+    print("%s %s %s " % (op, sr, f"{off}({dr})"), end='')
+    # emitLoc += 1
+    if (TraceCode):
+        print("\t" + c, end='')
+    print()
+    # if (highEmitLoc < emitLoc):
+    #     highEmitLoc = emitLoc}
+
+
+# Procedure emitADD emits add operation
+# op = the opcode
+# dr = destination register
+# r1 = register 1
+# r2 = register 2
+# c = a comment to be printed if TraceCode is TRUE
+def emitADD( op, dr, r1, r2, c):
+    # global emitLoc
+    # global highEmitLoc
+    print("%s %s %s %s " % (op, dr, r1, r2), end='')
+    # emitLoc += 1
+    if (TraceCode):
+        print("\t" + c, end='')
+    print()
+    # if (highEmitLoc < emitLoc):
+    #     highEmitLoc = emitLoc
+
+
+
+# Procedure emitADDIU emits add immediate unsign to update sp
+# op = the opcode
+# dr = destination register
+# sr = source register
+# imm = value
+# c = a comment to be printed if TraceCode is TRUE
+def emitADDIU( op, dr, sr, imm, c):
+    # global emitLoc
+    # global highEmitLoc
+    print("%s %s %s %d " % (op, dr, sr, imm), end='')
+    # emitLoc += 1
+    if (TraceCode):
+        print("\t" + c, end='')
+    print()
+    # if (highEmitLoc < emitLoc):
+    #     highEmitLoc = emitLoc
+
+
+
 
 # Function emitSkip skips "howMany" code locations for later backpatch.
 # It also returns the current code position
@@ -230,17 +287,22 @@ def cGen(tree):
         # elif tree.nodekind == NodeKind.ExpK:
         #     genExp(tree)
         if tree.expression == ExpressionType.Num:
+            # gen code to load integer constant using LDC */
+            emitLI("li", acc, tree.value, "load immediate value")
             
         if tree.expression == ExpressionType.Addop:
             e1 = tree.child[0]
             e2 = tree.child[1]
 
-            cGen(e1)
+            cGen(e1) 
+            emitSW("sw", acc, 0, sp, "store word")
+            emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+            cGen(e2)
+            emitLW('lw', temp, 4, sp, "load word")
+            emitADD('add', acc, acc, temp, "add")
+            emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
 
-
-
-
-        cGen(tree.sibling)
+        # cGen(tree.sibling)
 
 #********************************************
 # the primary function of the code generator 
@@ -258,7 +320,7 @@ def codeGen(syntaxTree, codefile, trace):
     stdout = sys.stdout
     sys.stdout = open(codefile + '.tm', 'w')
     s = "File: " + codefile
-    emitComment("TINY Compilation to TM Code")
+    emitComment("C- Compilation to TM Code")
     emitComment(s)
     # generate standard prelude
     emitComment("Standard prelude:")
