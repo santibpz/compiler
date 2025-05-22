@@ -305,11 +305,22 @@ def cGen(tree):
             emitLI("li", v0, 1, "load immediate value")
         
         if tree.expression == ExpressionType.Args:
-            e1 = tree.child[0]
-            cGen(e1)
+            e = tree.child[0]
+            while e is not None:
+                cGen(e)
+                emitSW('sw', acc, 0, sp, "store word")
+                emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+                e = e.sibling
             
         if tree.expression == ExpressionType.Call:
+            e = tree.child[1] # Args Node
+
             emitSW('sw', fp, 0, sp, "store word")
+            emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
+            if e is not None:
+                cGen(e)
+            print("%s %s " % ('jal', f"{tree.value}"), end='')
+            
 
         # cGen(tree.sibling)
 
