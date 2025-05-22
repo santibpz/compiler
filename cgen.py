@@ -291,7 +291,7 @@ def cGen(tree):
             # gen code to load integer constant using LDC */
             emitLI("li", acc, tree.value, "load immediate value")
             
-        if tree.expression == ExpressionType.Addop:
+        elif tree.expression == ExpressionType.Addop:
             e1 = tree.child[0]
             e2 = tree.child[1]
 
@@ -304,7 +304,7 @@ def cGen(tree):
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
             emitLI("li", v0, 1, "load immediate value")
         
-        if tree.expression == ExpressionType.Args:
+        elif tree.expression == ExpressionType.Args:
             e = tree.child[0]
             while e is not None:
                 cGen(e)
@@ -312,16 +312,15 @@ def cGen(tree):
                 emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
                 e = e.sibling
             
-        if tree.expression == ExpressionType.Call:
-            e = tree.child[1] # Args Node
+        elif tree.expression == ExpressionType.Call:
+            e = tree.child[0] # Args Node
 
             emitSW('sw', fp, 0, sp, "store word")
             emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
             if e is not None:
                 cGen(e)
-            print("%s %s " % ('jal', f"{tree.value}"), end='')
+            print("\t%s %s " % ('jal', f"{tree.value}"), end='\n')
             
-
         # cGen(tree.sibling)
 
 #********************************************

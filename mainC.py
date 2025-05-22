@@ -19,6 +19,7 @@ syntaxTree, Error = parse(False)
 if not(Error):
     print()
     print("Building Symbol Table...")
+    push_st('global')
     buildSymtab(syntaxTree, False)
     print()
     print("Checking Types...")
