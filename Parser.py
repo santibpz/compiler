@@ -469,7 +469,7 @@ def parse(imprime = True):
             while token != TokenType.COMMENT_END:
                 token, tokenString, lineno = getToken(False)
             token, tokenString, lineno = getToken(False)
-    t = additive_expression()
+    t = declaration_list()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")
     if imprime:

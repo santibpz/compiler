@@ -7,8 +7,12 @@ import sys
 acc = '$a0'
 # stack pointer
 sp = '$sp'
+# frame pointer
+fp = '$fp'
 # temporary register
 temp = '$t1'
+# Int register
+v0 = '$v0'
 
 # TM location number for current instruction emission
 emitLoc = 0
@@ -19,7 +23,7 @@ highEmitLoc = 0
 # Procedure emitComment prints a comment line with comment c in the code file
 def emitComment(c):
     if (TraceCode):
-        print("* " + c)
+        print("# " + c)
 
 # Procedure emitLI emits a Loas immediate value into register
 # op = the opcode
@@ -29,10 +33,10 @@ def emitComment(c):
 def emitLI( op, r, imm, c):
     # global emitLoc
     # global highEmitLoc
-    print("%s %s %d " % (op,r,imm), end='')
+    print("\t%s %s, %d " % (op,r,imm), end='')
     # emitLoc += 1
     if (TraceCode):
-        print("\t" + c, end='')
+        print("\t# " + c, end='')
     print()
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc
@@ -47,14 +51,13 @@ def emitLI( op, r, imm, c):
 def emitLW( op, dr, off, sr, c):
     # global emitLoc
     # global highEmitLoc
-    print("%s %s %s " % (op, dr, f"{off}({sr})"), end='')
+    print("\t%s %s, %s " % (op, dr, f"{off}({sr})"), end='')
     # emitLoc += 1
     if (TraceCode):
-        print("\t" + c, end='')
+        print("\t# " + c, end='')
     print()
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc}
-
 
 
 
@@ -67,10 +70,10 @@ def emitLW( op, dr, off, sr, c):
 def emitSW( op, sr, off, dr, c):
     # global emitLoc
     # global highEmitLoc
-    print("%s %s %s " % (op, sr, f"{off}({dr})"), end='')
+    print("\t%s %s, %s " % (op, sr, f"{off}({dr})"), end='')
     # emitLoc += 1
     if (TraceCode):
-        print("\t" + c, end='')
+        print("\t# " + c, end='')
     print()
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc}
@@ -85,10 +88,10 @@ def emitSW( op, sr, off, dr, c):
 def emitADD( op, dr, r1, r2, c):
     # global emitLoc
     # global highEmitLoc
-    print("%s %s %s %s " % (op, dr, r1, r2), end='')
+    print("\t%s %s, %s, %s " % (op, dr, r1, r2), end='')
     # emitLoc += 1
     if (TraceCode):
-        print("\t" + c, end='')
+        print("\t# " + c, end='')
     print()
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc
@@ -104,15 +107,13 @@ def emitADD( op, dr, r1, r2, c):
 def emitADDIU( op, dr, sr, imm, c):
     # global emitLoc
     # global highEmitLoc
-    print("%s %s %s %d " % (op, dr, sr, imm), end='')
+    print("\t%s %s, %s, %d " % (op, dr, sr, imm), end='')
     # emitLoc += 1
     if (TraceCode):
-        print("\t" + c, end='')
+        print("\t# " + c, end='')
     print()
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc
-
-
 
 
 # Function emitSkip skips "howMany" code locations for later backpatch.
@@ -301,6 +302,14 @@ def cGen(tree):
             emitLW('lw', temp, 4, sp, "load word")
             emitADD('add', acc, acc, temp, "add")
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
+            emitLI("li", v0, 1, "load immediate value")
+        
+        if tree.expression == ExpressionType.Args:
+            e1 = tree.child[0]
+            cGen(e1)
+            
+        if tree.expression == ExpressionType.Call:
+            emitSW('sw', fp, 0, sp, "store word")
 
         # cGen(tree.sibling)
 
@@ -318,18 +327,20 @@ def codeGen(syntaxTree, codefile, trace):
     #print(BucketList) # ¿Por qué se mantiene esta variable si está declarada en symtab.py?
     TraceCode = trace # Si es True imprime comentarios
     stdout = sys.stdout
-    sys.stdout = open(codefile + '.tm', 'w')
+    sys.stdout = open(codefile + '.asm', 'w')
     s = "File: " + codefile
-    emitComment("C- Compilation to TM Code")
+    emitComment("C- Compilation to asm code")
     emitComment(s)
-    # generate standard prelude
-    emitComment("Standard prelude:")
-    # emitRM("LD",mp,0,ac,"load maxaddress from location 0")
-    # emitRM("ST",ac,0,ac,"clear location 0")
-    emitComment("End of standard prelude.")
+    # main asm template
+    print(f"\t.text")
+    print(f"\t.globl main")
+
+    print("main:")
+    
     # generate code for TINY program
     cGen(syntaxTree)
     # finish
+    print(f"\tsyscall")
     emitComment("End of execution.")
     # emitRO("HALT",0,0,0,"")
     sys.stdout.close()
