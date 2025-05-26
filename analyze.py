@@ -4,7 +4,6 @@ from symtab import *
 Error = False
 # counter for variable memory locations
 location = 0
-
 # scope variable
 scope = 0
 
@@ -56,21 +55,33 @@ def insertNode(t):
                     if entry["params_num"] != a_n:
                         SemanticError(f"Expected {p_m} arguments but {a_n} were given.", t.lineno)
             
-        elif t.expression == DeclarationKind.LocalDeclaration:
-            scope += 1
-            location += 1
-            push_st('local')
+        # elif t.expression == DeclarationKind.LocalDeclaration:
+        #     scope += 1
+        #     location += 1
+        #     push_st('local')
 
         elif t.expression == ExpressionType.FunDeclaration:
-            if (st_lookup(t.value) is None):
-                # not yet in table, so treat as new definition
-                st_insert(t.value, t.child[0], scope, t.lineno, location, params=True, params_num=t.params_num)
+            entry = {
+            "type": t.child[0],
+            "scope": 0,
+            "lines": [t.lineno],
+            "location": location,
+            "params": True,
+            "params_num": t.params_num
+           }
+            if upt_global(t.value, entry) is not False:
                 location+=1
-             
             else:
-                # already in table, so ignore location, 
-                # add line number of use only
-                print("symbol already in ST")
+                SemanticError(f"method {t.value} already exists", t.lineno)
+            
+            # if (st_lookup(t.value) is None): #fn name
+
+            #     # not yet in table, so treat as new definition
+            #     st_insert(t.value, t.child[0], scope, t.lineno, location, params=True, params_num=t.params_num)
+            #     location+=1
+            
+            scope += 1
+            push_st(f"{t.value}")
 
         elif t.expression == ExpressionType.Param:
             
@@ -82,15 +93,26 @@ def insertNode(t):
                 # already in table, so ignore location, 
                 # add line number of use only
                 print("symbol already in ST")
+
+        # elif t.expression == ExpressionType.Return:
+        #     pr_st()
+        #     pop_st()
+
+
             
 # Function buildSymtab constructs the symbol 
 # table by preorder traversal of the syntax tree
 def buildSymtab(syntaxTree, imprime):
     traverse(syntaxTree, insertNode, nullProc)
+    if st_search_main() is False:
+        print(f">>> 'main' reference not found.\n", end='')
+        Error = True
     if (imprime):
         print()
         print("Symbol table:")
         printSymbolTableStack()
+        
+        # pr_st()
 
 def typeError(t, message):
     print("Type error at line", t.lineno, ":",message)
@@ -99,7 +121,7 @@ def typeError(t, message):
 # syntax error method
 def SemanticError(errorMessage, lineno):
     print(f">>> {errorMessage} at line {lineno}\n", end='')
-
+    Error = True
 
 # Procedure checkNode performs type checking at a single tree node
 def checkNode(t):

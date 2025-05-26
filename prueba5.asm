@@ -3,14 +3,12 @@
 	.text
 	.globl main
 main:
-	sw $fp, 0($sp) 	# store word
+	move $fp, $sp	# move operation
+	sw $ra, 0($sp) 	# store return address
 	addiu $sp, $sp, -4 	# add immediate unsigned
-	li $a0, 5 	# load immediate value
-	sw $a0, 0($sp) 	# store word
-	addiu $sp, $sp, -4 	# add immediate unsigned
-	li $a0, 2 	# load immediate value
-	sw $a0, 0($sp) 	# store word
-	addiu $sp, $sp, -4 	# add immediate unsigned
-	jal add 
+	lw $ra, 4($sp) 	# load ra
+	addiu $sp, $sp, 8 	# addiu
+	lw $fp, 0($sp) 	# load fp
+	jr $ra 
 	syscall
 # End of execution.

@@ -24,7 +24,44 @@ class SymbolTable:
         while table is not None:
             if name in table.entries:
                 return table.entries[name]
-            
+            table = table.parent
+        return None
+    
+    def search_main(self):
+        table = self
+        while table is not None:
+            if table.scope_name == 'global':
+                if 'main' in table.entries:
+                    return True
+            table = table.parent
+        return False
+    
+    def upt_gbl(self, name, entry):
+        table = self
+        while table is not None:
+            if table.scope_name == 'global' and name not in table.entries:
+                table.insert(name, entry)
+                return True
+            table = table.parent
+        return False
+    
+    def upt_offset(self, scope_name, symbol, offset):
+        table = self
+        while table is not None:
+            if table.scope_name == scope_name and symbol in table.entries:
+                entry = table.entries[symbol]
+                entry["offset"] = offset
+                table.update(symbol, entry)
+                return True
+            table = table.parent
+        return False
+    
+    def get_offset(self, scope_name, symbol):
+        table = self
+        while table is not None:
+            if table.scope_name == scope_name and symbol in table.entries:
+                entry = table.entries[symbol]
+                return entry["offset"]
             table = table.parent
         return None
 
@@ -43,9 +80,10 @@ def push_st(scope_name):
 
 def pop_st():
     global currentSymbolTable
-    currentSymbolTable = symbolTableStack.pop()
+    if currentSymbolTable.parent is not None:
+        currentSymbolTable = currentSymbolTable.parent
 
-def st_insert(name, type, scope, lineno, location, value=None, size=None, params=False, params_num=None):
+def st_insert(name, type, scope, lineno, location, value=None, size=None, params=False, params_num=None, offset=None):
     entry = currentSymbolTable.lookup(name, True)
     if entry is None:
         entry = {
@@ -56,7 +94,8 @@ def st_insert(name, type, scope, lineno, location, value=None, size=None, params
             "value": value,
             "size": size,
             "params": params,
-            "params_num": params_num
+            "params_num": params_num,
+            "offset": offset
         }
         currentSymbolTable.insert(name, entry)
     else:
@@ -70,6 +109,17 @@ def st_lookup(name, local_search = False):
         return currentSymbolTable.lookup(name, local_search)
     return currentSymbolTable.lookup(name)
 
+def st_search_main():
+    return currentSymbolTable.search_main()
+
+def upt_global(name, entry):
+    return currentSymbolTable.upt_gbl(name, entry)
+
+def upt_offset(scope_name, name, offset):
+    return currentSymbolTable.upt_offset(scope_name, name, offset)
+
+def get_offset(scope_name, symbol):
+    return currentSymbolTable.get_offset(scope_name, symbol)
         
 # Procedure printSymTab prints a formatted 
 # listing of the symbol table contents 
@@ -81,16 +131,16 @@ def printSymbolTableStack():
     for i, table in enumerate(reversed(symbolTableStack + [currentSymbolTable])):
         if table is not None:
             print(f"Scope {table.scope_name if hasattr(table, 'scope_name') else i}:")
-            print("-" * 100)
-            print(f"{'Name':15} {'Type':10} {'Scope':15} {'Lines':20} {'Loc':6} {'Size':6} {'Params':10} {'No. Params'}")
-            print("-" * 100)
+            print("-" * 120)
+            print(f"{'Name':15} {'Type':10} {'Scope':15} {'Lines':20} {'Loc':6} {'Size':6} {'Params':10} {'No. Params':5} {'offset'}")
+            print("-" * 120)
             for name, entry in table.entries.items():
                 # Convert lines list to string, e.g., [2, 4] → "2,4"
                 lines_str = ','.join(str(line) for line in entry.get('lines', []))
                 print(f"{name:15} {str(entry.get('type')):6} {entry.get('scope'):10} \t"
                     f"{lines_str:15} {entry.get('location'):10} \t"
                     f"{str(entry.get('size')):6} "
-                    f"{str(entry.get('params')):10} {str(entry.get('params_num')):6}")
-            print("-" * 100)
-    print("=" * 100)
-
+                    f"{str(entry.get('params')):10} {str(entry.get('params_num')):6} \t"
+                    f"{str(entry.get('offset')):6} ")
+            print("-" * 120)
+    print("=" * 120)

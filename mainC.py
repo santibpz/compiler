@@ -28,3 +28,4 @@ if not(Error):
     print("Type Checking Finished")
 if not(Error):
     codeGen(syntaxTree, fileName, True)
+    print('aa')

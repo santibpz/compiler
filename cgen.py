@@ -9,10 +9,14 @@ acc = '$a0'
 sp = '$sp'
 # frame pointer
 fp = '$fp'
+# return address
+ra = '$ra'
 # temporary register
 temp = '$t1'
 # Int register
 v0 = '$v0'
+# offset
+off = 0
 
 # TM location number for current instruction emission
 emitLoc = 0
@@ -115,6 +119,19 @@ def emitADDIU( op, dr, sr, imm, c):
     # if (highEmitLoc < emitLoc):
     #     highEmitLoc = emitLoc
 
+# Procedure emitLI emits a Loas immediate value into register
+# op = the opcode
+# d = destination register
+# s = source register
+# c = a comment to be printed if TraceCode is TRUE
+def emitMove( op, d, s, c):
+    print("\t%s %s, %s" % (op, d, s), end='')
+    if (TraceCode):
+        print("\t# " + c, end='')
+    print()
+ 
+
+
 
 # Function emitSkip skips "howMany" code locations for later backpatch.
 # It also returns the current code position
@@ -161,67 +178,7 @@ def emitRM_Abs(op, r, a, c):
 # is stored, and incremeted when loaded again
 tmpOffset = 0
 
-# Procedure genStmt generates code at a statement node
-def genStmt(tree):
-    if tree.stmt == StmtKind.IfK:
-        if (TraceCode):
-            emitComment("-> if")
-        p1 = tree.child[0]
-        p2 = tree.child[1]
-        p3 = tree.child[2]
-        # generate code for test expression */
-        cGen(p1)
-        savedLoc1 = emitSkip(1)
-        emitComment("if: jump to else belongs here")
-        # recurse on then part */
-        cGen(p2)
-        savedLoc2 = emitSkip(1)
-        emitComment("if: jump to end belongs here")
-        currentLoc = emitSkip(0)
-        emitBackup(savedLoc1)
-        emitRM_Abs("JEQ",ac,currentLoc,"if: jmp to else")
-        emitRestore()
-        # recurse on else part */
-        cGen(p3)
-        currentLoc = emitSkip(0)
-        emitBackup(savedLoc2)
-        emitRM_Abs("LDA",pc,currentLoc,"jmp to end")
-        emitRestore()
-        if (TraceCode):
-            emitComment("<- if")
-    elif tree.stmt == StmtKind.RepeatK:
-        if (TraceCode):
-                emitComment("-> repeat")
-        p1 = tree.child[0]
-        p2 = tree.child[1]
-        savedLoc1 = emitSkip(0)
-        emitComment("repeat: jump after body comes back here")
-        # generate code for body */
-        cGen(p1)
-        # generate code for test */
-        cGen(p2)
-        emitRM_Abs("JEQ",ac,savedLoc1,"repeat: jmp back to body")
-        if (TraceCode):
-            emitComment("<- repeat")
-    elif tree.stmt == StmtKind.AssignK:
-        if (TraceCode):
-            emitComment("-> assign")
-        # generate code for rhs */
-        cGen(tree.child[0])
-        # now store value */
-        loc = st_lookup(tree.name)
-        emitRM("ST",ac,loc,gp,"assign: store value")
-        if (TraceCode):
-            emitComment("<- assign")
-    elif  tree.stmt == StmtKind.ReadK:
-        emitRO("IN",ac,0,0,"read integer value")
-        loc = st_lookup(tree.name)
-        emitRM("ST",ac,loc,gp,"read: store value")
-    elif tree.stmt == StmtKind.WriteK:
-        # generate code for expression to write */
-        cGen(tree.child[0])
-        # now output it */
-        emitRO("OUT",ac,0,0,"write ac")
+
 
 # Procedure genExp generates code at an expression node */
 def genExp(tree):
@@ -280,38 +237,83 @@ def genExp(tree):
         if (TraceCode):
             emitComment("<- Op")
 
-# Procedure cGen recursively generates code by tree traversal
-def cGen(tree):
-    if (tree != None):
-        # if tree.nodekind == NodeKind.StmtK:
-        #     genStmt(tree)
-        # elif tree.nodekind == NodeKind.ExpK:
-        #     genExp(tree)
+# Procedure to generate argument code
+def genArgs(tree): # tree should be ExpressionType.Num
+    if tree != None:
+        genArgs(tree.sibling)
         if tree.expression == ExpressionType.Num:
             # gen code to load integer constant using LDC */
             emitLI("li", acc, tree.value, "load immediate value")
+            emitSW('sw', acc, 0, sp, "store word")
+            emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+
+# Procedure cGen recursively generates code by tree traversal
+def cGen(tree, scope_name=None):
+    global off
+    if (tree != None):
+    
+        if tree.expression == ExpressionType.Num:
+            # gen code to load integer constant using LDC */
+            emitLI("li", acc, tree.value, "load immediate value")
+
+        elif tree.expression == ExpressionType.Var:
+            offset = get_offset(scope_name, tree.value)
+            # print("val: ", tree.value)
+            # print("offset: ", get_offset(scope_name, tree.value))
+            emitLW('lw', acc, offset, fp, "load argument")
             
         elif tree.expression == ExpressionType.Addop:
             e1 = tree.child[0]
             e2 = tree.child[1]
 
-            cGen(e1) 
+            cGen(e1, scope_name) 
             emitSW("sw", acc, 0, sp, "store word")
             emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
-            cGen(e2)
+            cGen(e2, scope_name)
             emitLW('lw', temp, 4, sp, "load word")
             emitADD('add', acc, acc, temp, "add")
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
             emitLI("li", v0, 1, "load immediate value")
+
+        elif tree.expression == ExpressionType.Param:
+            if scope_name is not None:
+                e = tree
+                while e is not None:
+                    off=off+4
+                    upt_offset(scope_name, e.value, off)
+                    e = e.sibling
+            # emitLW('lw', acc, off, fp, "load argument")
+            # emitSW('sw', acc, 0, sp, "store word")
+            # emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
         
-        elif tree.expression == ExpressionType.Args:
+        elif tree.expression == ExpressionType.FunDeclaration: # calle
+            z = 4 * tree.params_num + 8
+            e1 = tree.child[1] # Param
+            e2 = tree.child[2] # function body
+            print(f"{tree.value}:")
+            emitMove('move', fp, sp, "move operation")
+            emitSW('sw', ra, 0, sp, "store return address")
+            emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
+            if e1 is not None:
+                cGen(e1, tree.value)
+                off = 0
+            if e2 is not None:
+                cGen(e2, tree.value)
+            emitLW('lw', ra, 4, sp, 'load ra')
+            emitADDIU('addiu', sp, sp, z, 'addiu')
+            emitLW('lw', fp, 0, sp, 'load fp')
+            print("\t%s %s " % ('jr', ra), end='\n')
+
+        elif tree.expression == ExpressionType.Args: # arguments passed to called fn
             e = tree.child[0]
-            while e is not None:
-                cGen(e)
-                emitSW('sw', acc, 0, sp, "store word")
-                emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
-                e = e.sibling
-            
+            if e is not None:
+                genArgs(e)
+            # while e is not None:
+            #     cGen(e)
+            #     emitSW('sw', acc, 0, sp, "store word")
+            #     emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+            #     e = e.sibling
+        
         elif tree.expression == ExpressionType.Call:
             e = tree.child[0] # Args Node
 
@@ -321,6 +323,11 @@ def cGen(tree):
                 cGen(e)
             print("\t%s %s " % ('jal', f"{tree.value}"), end='\n')
             
+        elif tree.expression == ExpressionType.Return:
+            e = tree.child[0]
+            if e is not None and scope_name is not None:
+                cGen(e, scope_name)
+
         # cGen(tree.sibling)
 
 #********************************************
@@ -345,7 +352,7 @@ def codeGen(syntaxTree, codefile, trace):
     print(f"\t.text")
     print(f"\t.globl main")
 
-    print("main:")
+    # print("main:")
     
     # generate code for TINY program
     cGen(syntaxTree)

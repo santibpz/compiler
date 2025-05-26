@@ -2,7 +2,7 @@ from globalTypes import *
 from Parser import *
 from analyze import *
 
-fileName = "prueba2"
+fileName = "prueba5"
 f = open(fileName + '.c-', 'r')
 program = f.read() 		# lee todo el archivo a compilar
 f.close()                       # cerrar el archivo con programa fuente

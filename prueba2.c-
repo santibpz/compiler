@@ -4,12 +4,12 @@ int minloc ( int all, int low, int high )
 {
     int i; int x; int k;
     k = low;
-    x = a[low];
+    x = 2;
     i = low + 1;
     while (i < high) /* check cond */
     {
-        if (a[i] < x) {
-            x = a[i];
+        if (x[i] < x) {
+            x = x[i];
             k = i;
         }
         i = i + 1;

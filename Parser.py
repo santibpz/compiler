@@ -43,12 +43,6 @@ def match(expected):
         print(token,tokenString)
         print("      ")
 
-def handle_comment():
-    global token, tokenString, lineno
-    while (token!=TokenType.COMMENT_END):
-        token, tokenString, lineno = getToken(False)
-    token, tokenString, lineno = getToken(False)
-
 
 # 1. program → declaration-list
 def program():
@@ -469,7 +463,7 @@ def parse(imprime = True):
             while token != TokenType.COMMENT_END:
                 token, tokenString, lineno = getToken(False)
             token, tokenString, lineno = getToken(False)
-    t = call()
+    t = declaration_list()
     if (token != TokenType.ENDFILE):
         SyntaxError("Code ends before file\n")
     if imprime:
