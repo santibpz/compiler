@@ -261,7 +261,16 @@ def cGen(tree, scope_name=None):
             # print("val: ", tree.value)
             # print("offset: ", get_offset(scope_name, tree.value))
             emitLW('lw', acc, offset, fp, "load argument")
-            
+        
+        elif tree.expression == ExpressionType.VarDeclaration:
+            if scope_name is not None:
+                # set the offset (local variable allocation)
+                off -= 4 
+                upt_offset(scope_name, tree.value, off)
+                emitLI('li', acc, 0, f"initialize var {tree.value} with 0")
+                # offset = get_offset(scope_name, tree.value)
+                # emitSW('sw', acc, offset, fp, f"store zero in {tree.value}")
+
         elif tree.expression == ExpressionType.Addop:
             e1 = tree.child[0]
             e2 = tree.child[1]
@@ -274,7 +283,15 @@ def cGen(tree, scope_name=None):
             emitADD('add', acc, acc, temp, "add")
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
             emitLI("li", v0, 1, "load immediate value")
-
+        
+        elif tree.expression == ExpressionType.Assign:
+            e = tree.child[1] # right subtree
+            if e is not None:
+                cGen(e) # process right subtree, result in $a0
+                offset = get_offset(scope_name, tree.value)
+                emitSW("sw", acc, 0, sp, "store word")  #store acc in -offset(fp), offset should already be stored
+                emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+                
         elif tree.expression == ExpressionType.Param:
             if scope_name is not None:
                 e = tree
