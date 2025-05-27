@@ -265,11 +265,14 @@ def cGen(tree, scope_name=None):
         elif tree.expression == ExpressionType.VarDeclaration:
             if scope_name is not None:
                 # set the offset (local variable allocation)
-                off -= 4 
-                upt_offset(scope_name, tree.value, off)
-                emitLI('li', acc, 0, f"initialize var {tree.value} with 0")
-                # offset = get_offset(scope_name, tree.value)
-                # emitSW('sw', acc, offset, fp, f"store zero in {tree.value}")
+                e = tree
+                while e is not None:
+                    off -= 4 
+                    upt_offset(scope_name, tree.value, off)
+                    emitLI('li', acc, 0, f"initialize var {tree.value} with 0")
+                    emitSW('sw', acc, 0, sp, f"Var declaration '{tree.value}'")
+                    emitADDIU("addiu", sp, sp, -4, "update sp")
+                    e = e.sibling
 
         elif tree.expression == ExpressionType.Addop:
             e1 = tree.child[0]
@@ -285,12 +288,12 @@ def cGen(tree, scope_name=None):
             emitLI("li", v0, 1, "load immediate value")
         
         elif tree.expression == ExpressionType.Assign:
+            v = tree.child[0] # variable
             e = tree.child[1] # right subtree
             if e is not None:
                 cGen(e) # process right subtree, result in $a0
-                offset = get_offset(scope_name, tree.value)
-                emitSW("sw", acc, 0, sp, "store word")  #store acc in -offset(fp), offset should already be stored
-                emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+                offset = get_offset(scope_name, v.value)
+                emitSW("sw", acc, offset, fp, f"updating value of variable {tree.value}")
                 
         elif tree.expression == ExpressionType.Param:
             if scope_name is not None:
@@ -339,6 +342,11 @@ def cGen(tree, scope_name=None):
             if e is not None:
                 cGen(e)
             print("\t%s %s " % ('jal', f"{tree.value}"), end='\n')
+
+        elif tree.expression == DeclarationKind.LocalDeclaration:
+            e = tree.child[0] # var declaration
+            if e is not None:
+                cGen(e, scope_name)
             
         elif tree.expression == ExpressionType.Return:
             e = tree.child[0]
