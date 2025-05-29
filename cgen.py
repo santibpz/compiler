@@ -17,6 +17,8 @@ temp = '$t1'
 v0 = '$v0'
 # offset
 off = 0
+#uid
+uid = 0
 
 # TM location number for current instruction emission
 emitLoc = 0
@@ -207,7 +209,7 @@ def genArgs(tree, scope_name=None): # tree should be ExpressionType.Num
             cGen(tree, scope_name)
 # Procedure cGen recursively generates code by tree traversal
 def cGen(tree, scope_name=None):
-    global off
+    global off,uid
     if (tree != None):
     
         if tree.expression == ExpressionType.Num:
@@ -241,9 +243,42 @@ def cGen(tree, scope_name=None):
             emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
             cGen(e2, scope_name)
             emitLW('lw', temp, 4, sp, "load word")
-            emitADD('add', acc, acc, temp, "add")
+            if tree.value == TokenType.PLUS.value:
+                emitADD('add', acc, acc, temp, "add")
+            elif tree.value == TokenType.MINUS.value:
+                emitADD('sub', acc, acc, temp, "sub")
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
             # emitLI("li", v0, 1, "load immediate value")
+
+
+        elif tree.expression == ExpressionType.Relop:
+            e1 = tree.child[0]
+            e2 = tree.child[1]
+
+            cGen(e1, scope_name)
+            emitSW("sw", acc, 0, sp, "store word")
+            emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
+            cGen(e2, scope_name)
+            emitLW('lw', temp, 4, sp, "load word")
+            emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
+
+            if tree.value == TokenType.EQEQ.value:
+                print("\t%s %s %s %s" % ('beq', acc, temp, f"true_branch_{uid}: "), end='\n')
+
+            elif tree.value == TokenType.GT.value:
+                print("\t%s %s %s %s" % ('bgt', acc, temp, f"true_branch_{uid}: "), end='\n')
+
+            elif tree.value == TokenType.GT_OR_EQ.value:
+                print("\t%s %s %s %s" % ('bge', acc, temp, f"true_branch_{uid}: "), end='\n')
+
+            elif tree.value == TokenType.LT.value:
+                print("\t%s %s %s %s" % ('blt', acc, temp, f"true_branch_{uid}: "), end='\n')
+
+            elif tree.value == TokenType.LT_OR_EQ.value:
+                print("\t%s %s %s %s" % ('ble', acc, temp, f"true_branch_{uid}: "), end='\n')
+
+            elif tree.value == TokenType.NOT_EQ.value:
+                print("\t%s %s %s %s" % ('bne', acc, temp, f"true_branch_{uid}: "), end='\n')
         
         elif tree.expression == ExpressionType.Assign:
             print(f"# Assign Op in '{scope_name}'")
@@ -327,6 +362,29 @@ def cGen(tree, scope_name=None):
             e = tree.child[0] # var declaration
             if e is not None:
                 cGen(e, scope_name)
+
+        elif tree.expression == ExpressionType.If:
+            e1 = tree.child[0] # Condition expression
+            e2 = tree.child[1] # If body
+            e3 = tree.child[2] # Else body
+
+            cGen(e1, scope_name) # this generates the condition
+            
+            if e3 is not None:
+                print(f"false_branch_{uid}:")
+                cGen(e3, scope_name)
+                print("\t%s %s " % ('b', f"end_if_{uid}"), end='\n')
+
+            print(f"true_branch_{uid}:")
+            cGen(e2, scope_name)
+
+            print(f"end_if_{uid}:")
+
+            uid+=1
+
+            # continue generating code for other expressions
+            if tree.sibling is not None:
+                cGen(tree.sibling, scope_name)
             
         elif tree.expression == ExpressionType.Return:
             e = tree.child[0]

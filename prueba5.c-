@@ -7,16 +7,22 @@ int main(void) {
   
 }  
 add(5, 2);  
-*/
+
 
 int sum(int a, int b) {
     int x;
-    x = a + b;
+    x = a - b;
     return x;
+}
+*/
+
+int max(int a, int b) {
+    if(a > b) return a;
+    else return b;
 }
 
 int main(void) {
-    int res;
-    res = sum(3,8);
-    output(res);
+    int maxV;
+    maxV = max(6,2);
+    output(maxV);
 }  
