@@ -2,17 +2,21 @@
  int add(int a, int b) {
     return a + b;
 } 
-
-
 int main(void) {
     int res;
   
 }  
-
 add(5, 2);  
 */
 
-int testFn(int a, int b) {
+int sum(int a, int b) {
     int x;
-    x = 6;
+    x = a + b;
+    return x;
 }
+
+int main(void) {
+    int res;
+    res = sum(3,8);
+    output(res);
+}  

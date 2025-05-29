@@ -129,55 +129,12 @@ def emitMove( op, d, s, c):
     if (TraceCode):
         print("\t# " + c, end='')
     print()
- 
 
-
-
-# Function emitSkip skips "howMany" code locations for later backpatch.
-# It also returns the current code position
-def emitSkip(howMany):
-    global emitLoc
-    global highEmitLoc
-    i = emitLoc
-    emitLoc += howMany
-    if (highEmitLoc < emitLoc):
-        highEmitLoc = emitLoc
-    return i
-
-# Procedure emitBackup backs up to loc = a previously skipped location
-def emitBackup(loc):
-    global emitLoc
-    if (loc > highEmitLoc):
-        emitComment("BUG in emitBackup")
-    emitLoc = loc
-
-# Procedure emitRestore restores the current code position to the highest
-# previously unemitted position
-def emitRestore():
-    global emitLoc
-    emitLoc = highEmitLoc
-
-# Procedure emitRM_Abs converts an absolute reference to a pc-relative
-# reference when emitting a register-to-memory TM instruction, where
-# op = the opcode
-# r = target register
-# a = the absolute location in memory
-# c = a comment to be printed if TraceCode is TRUE
-def emitRM_Abs(op, r, a, c):
-    global emitLoc
-    global highEmitLoc
-    print("%3d:  %5s  %d,%d(%d) " % (emitLoc,op,r,a-(emitLoc+1),pc), end='')
-    emitLoc+=1
-    if (TraceCode):
-        print("\t" + c, end='')
-    print()
-    if (highEmitLoc < emitLoc):
-        highEmitLoc = emitLoc
-
-# tmpOffset is the memory offset for temps. It is decremented each time a temp
-# is stored, and incremeted when loaded again
-tmpOffset = 0
-
+# Procedure to output int
+def output():
+    print(f"output:")
+    emitLI('li', v0, 1, "output result")
+    print(f"\tsyscall")
 
 
 # Procedure genExp generates code at an expression node */
@@ -238,7 +195,7 @@ def genExp(tree):
             emitComment("<- Op")
 
 # Procedure to generate argument code
-def genArgs(tree): # tree should be ExpressionType.Num
+def genArgs(tree, scope_name=None): # tree should be ExpressionType.Num
     if tree != None:
         genArgs(tree.sibling)
         if tree.expression == ExpressionType.Num:
@@ -246,7 +203,8 @@ def genArgs(tree): # tree should be ExpressionType.Num
             emitLI("li", acc, tree.value, "load immediate value")
             emitSW('sw', acc, 0, sp, "store word")
             emitADDIU("addiu", sp, sp, -4, "add immediate unsigned")
-
+        else:
+            cGen(tree, scope_name)
 # Procedure cGen recursively generates code by tree traversal
 def cGen(tree, scope_name=None):
     global off
@@ -268,9 +226,9 @@ def cGen(tree, scope_name=None):
                 e = tree
                 while e is not None:
                     off -= 4 
-                    upt_offset(scope_name, tree.value, off)
-                    emitLI('li', acc, 0, f"initialize var {tree.value} with 0")
-                    emitSW('sw', acc, 0, sp, f"Var declaration '{tree.value}'")
+                    upt_offset(scope_name, e.value, off)
+                    emitLI('li', acc, 0, f"initialize var {e.value} with 0")
+                    emitSW('sw', acc, 0, sp, f"Var declaration '{e.value}'")
                     emitADDIU("addiu", sp, sp, -4, "update sp")
                     e = e.sibling
 
@@ -285,15 +243,21 @@ def cGen(tree, scope_name=None):
             emitLW('lw', temp, 4, sp, "load word")
             emitADD('add', acc, acc, temp, "add")
             emitADDIU("addiu", sp, sp, 4, "add immediate unsigned")
-            emitLI("li", v0, 1, "load immediate value")
+            # emitLI("li", v0, 1, "load immediate value")
         
         elif tree.expression == ExpressionType.Assign:
+            print(f"# Assign Op in '{scope_name}'")
             v = tree.child[0] # variable
             e = tree.child[1] # right subtree
             if e is not None:
-                cGen(e) # process right subtree, result in $a0
+                cGen(e, scope_name) # process right subtree, result in $a0
                 offset = get_offset(scope_name, v.value)
-                emitSW("sw", acc, offset, fp, f"updating value of variable {tree.value}")
+                emitSW("sw", acc, offset, fp, f"updating value of variable {v.value}")
+            
+            # generate code for other statements
+            if tree.sibling is not None:
+                cGen(tree.sibling, scope_name)
+
                 
         elif tree.expression == ExpressionType.Param:
             if scope_name is not None:
@@ -307,6 +271,7 @@ def cGen(tree, scope_name=None):
             # emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
         
         elif tree.expression == ExpressionType.FunDeclaration: # calle
+            print(f"# '{tree.value}' Function Declaration")
             z = 4 * tree.params_num + 8
             e1 = tree.child[1] # Param
             e2 = tree.child[2] # function body
@@ -318,16 +283,29 @@ def cGen(tree, scope_name=None):
                 cGen(e1, tree.value)
                 off = 0
             if e2 is not None:
-                cGen(e2, tree.value)
+                cGen(e2, tree.value) # local declarations
+                # off = 0
+                # generate code for statement_list
+                if e2.sibling is not None:
+                    cGen(e2.sibling, tree.value)
+                
+                emitADDIU('addiu', sp, sp, -off, 'clear stack')
+                off = 0
+
             emitLW('lw', ra, 4, sp, 'load ra')
             emitADDIU('addiu', sp, sp, z, 'addiu')
             emitLW('lw', fp, 0, sp, 'load fp')
             print("\t%s %s " % ('jr', ra), end='\n')
 
+            # generate code for other function or var declarations
+            if tree.sibling is not None:
+                cGen(tree.sibling)
+
         elif tree.expression == ExpressionType.Args: # arguments passed to called fn
+            print(f"# Arguments")
             e = tree.child[0]
             if e is not None:
-                genArgs(e)
+                genArgs(e, scope_name)
             # while e is not None:
             #     cGen(e)
             #     emitSW('sw', acc, 0, sp, "store word")
@@ -335,15 +313,17 @@ def cGen(tree, scope_name=None):
             #     e = e.sibling
         
         elif tree.expression == ExpressionType.Call:
+            print(f"# '{tree.value}' Function Call")
             e = tree.child[0] # Args Node
 
             emitSW('sw', fp, 0, sp, "store word")
             emitADDIU('addiu', sp, sp, -4, "add immediate unsigned")
             if e is not None:
-                cGen(e)
+                cGen(e, scope_name)
             print("\t%s %s " % ('jal', f"{tree.value}"), end='\n')
 
         elif tree.expression == DeclarationKind.LocalDeclaration:
+            print(f"# Local declarations of  '{scope_name}'")
             e = tree.child[0] # var declaration
             if e is not None:
                 cGen(e, scope_name)
@@ -381,10 +361,9 @@ def codeGen(syntaxTree, codefile, trace):
     
     # generate code for TINY program
     cGen(syntaxTree)
+    output()
     # finish
-    print(f"\tsyscall")
     emitComment("End of execution.")
-    # emitRO("HALT",0,0,0,"")
     sys.stdout.close()
     sys.stdout = stdout
     
